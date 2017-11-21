@@ -1,0 +1,11 @@
+%% -*- mode: erlang -*-
+{application, oliver, [
+    {description, ""},
+    {vsn, "0.9.0"},
+    {modules, []},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib
+    ]}
+]}.
