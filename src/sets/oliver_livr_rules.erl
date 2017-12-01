@@ -47,7 +47,6 @@
 -export([leave_only/4]).
 -export([default/4]).
 
--include("oliver.hrl").
 
 %% API
 %% common rules
@@ -337,24 +336,76 @@ equal_to_field(_Args, Value, _Opts, _InData) ->
     {ok, Value}.
 
 %% meta rules
+nested_object([List|_], Value, Opts, _InData)
+        when is_list(List); is_map(List) ->
+    nested_object(List, Value, Opts, _InData);
 nested_object(Args, Value, Opts, _InData) ->
     oliver:validate(Args, Value, Opts).
 
-list_of(_Args, Value, _Opts, _InData) when is_list(Value) ->
-    %% TODO
-    {ok, Value};
+list_of([List|_], Value, Opts, InData) when is_list(List); is_map(List) ->
+    list_of(List, Value, Opts, InData);
+list_of(Rules, ListOfValues, Opts, _InData) when is_list(ListOfValues) ->
+    Results = [begin
+        oliver:validate(#{'$fake_key' => Rules}, #{'$fake_key' => Value}, Opts)
+    end || Value <- ListOfValues],
+    case lists:keymember(error, 1, Results) of
+        false ->
+            ListOfValues2 = [Val || {ok, #{'$fake_key' := Val}} <- Results],
+            {ok, ListOfValues2};
+        true ->
+            ListOfErrors = [begin
+                case Result of
+                    {ok, _} -> null;
+                    {error, #{'$fake_key' := Err}} -> Err
+                end
+            end || Result <- Results],
+            {error, ListOfErrors}
+    end;
 list_of(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
-list_of_objects(_Args, Value, _Opts, _InData) when is_list(Value) ->
-    %% TODO
-    {ok, Value};
+list_of_objects([List|_], Value, Opts, InData) when is_list(List); is_map(List) ->
+    list_of_objects(List, Value, Opts, InData);
+list_of_objects(Schema, Objects, Opts, _InData) when is_list(Objects) ->
+    Results = [oliver:validate(Schema, Object, Opts) || Object <- Objects],
+    case lists:keymember(error, 1, Results) of
+        false ->
+            ListOfValues2 = [Val || {ok, Val} <- Results],
+            {ok, ListOfValues2};
+        true ->
+            ListOfErrors = [begin
+                case Result of
+                    {ok, _} -> null;
+                    {error, Err} -> Err
+                end
+            end || Result <- Results],
+            {error, ListOfErrors}
+    end;
 list_of_objects(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
-list_of_different_objects(_Args, Value, _Opts, _InData) when is_list(Value) ->
-    %% TODO
-    {ok, Value};
+list_of_different_objects([List|_], Value, Opts, InData) when is_list(List) ->
+    list_of_different_objects(List, Value, Opts, InData);
+list_of_different_objects([Field, Schemas|_], Objects, Opts, _InData)
+        when is_list(Objects) ->
+    Results = [begin
+        Type = oliver_maps:get(Field, Object),
+        Schema = oliver_maps:get(Type, Schemas),
+        oliver:validate(Schema, Object, Opts)
+    end || Object <- Objects, oliver_maps:is_key(Field, Object)],
+    case lists:keymember(error, 1, Results) of
+        false ->
+            ListOfValues2 = [Val || {ok, Val} <- Results],
+            {ok, ListOfValues2};
+        true ->
+            ListOfErrors = [begin
+                case Result of
+                    {ok, _} -> null;
+                    {error, Err} -> Err
+                end
+            end || Result <- Results],
+            {error, ListOfErrors}
+    end;
 list_of_different_objects(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
