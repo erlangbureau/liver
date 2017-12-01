@@ -94,4 +94,7 @@ More complex example
             {<<"zip">>, 12345},
             {<<"street">>, <<"10">>},
             {<<"building">>, 10}]}]}
+4> oliver:validate(Schema, Input, [{strict, true}]).
+{error,[{<<"extra_field">>,unannounced},
+        {<<"address">>,[{<<"extra_field">>,unannounced}]}]}
 ```
