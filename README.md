@@ -1,4 +1,5 @@
-# DESCRIPTION
+# Oliver
+## DESCRIPTION
 
 Oliver is a lightweight Erlang validator based on LIVR Specification (See http://livr-spec.org for details)
 
@@ -23,7 +24,7 @@ Oliver is a lightweight Erlang validator based on LIVR Specification (See http:/
 4. Support both maps and proplists as input data types
 
 
-# GETTING STARTED
+## GETTING STARTED
 1. Add as a dependency in your project:
   * For **rebar** add to rebar.config
   ```erl
@@ -50,8 +51,8 @@ dep_oliver = git https://github.com/erlangbureau/oliver.git master
 ```
 3. Thats all, now you can validate data, register your own rules or add aliases for built-in rules.
 
-# USAGE
-## Examples of data validation
+## USAGE
+### Examples of data validation
 
 Simple example:
 ```erl
