@@ -2,8 +2,8 @@
 
 %% API
 -export([validate/2, validate/3]).
--export([get_env/1, get_env/2]).
 -export([which/1]).
+-export([add_rule/2]).
 
 -include("oliver.hrl").
 
@@ -22,16 +22,13 @@ validate(Schema, InData, Opts) ->
     validate(SchemaKeys2, DataKeys2, Schema, InData, OutData, ErrData, Opts).
 
 which(Rule) ->
-    which(Rule, ?DEFAULT_RULES).    %% TODO custom rules
+    AvailableRules = application:get_env(?MODULE, rules, ?DEFAULT_RULES),
+    maps:get(Rule, AvailableRules, undefined_module).
 
-get_env(Key) ->
-    get_env(Key, undefined).
-
-get_env(Key, Default) ->
-    case application:get_env(oliver, Key) of
-        {ok, Value} -> Value;
-        _           -> Default
-    end.
+add_rule(Rule, Module) when is_atom(Rule), is_atom(Module) ->
+    OldRules = application:get_env(?MODULE, rules, ?DEFAULT_RULES),
+    NewRules2 = oliver_maps:put(Rule, Module, OldRules),
+    application:set_env(?MODULE, rules, NewRules2).
 
 %% internal
 validate([K|SchemaKeys], [K|DataKeys], Schema, In, Out, Errors, Opts) ->
@@ -41,7 +38,7 @@ validate([K|SchemaKeys], [K|DataKeys], Schema, In, Out, Errors, Opts) ->
     ApplyFun = fun(Rule, RuleArgs, Acc) ->
         apply_rule(Rule, RuleArgs, Acc, Opts, In)
     end,
-    case rules_fold(ApplyFun, {ok, Value}, Rules) of
+    case oliver_maps:fold(ApplyFun, {ok, Value}, Rules) of
         {ok, Value2} ->
             Out2 = oliver_maps:put(K, Value2, Out),
             validate(SchemaKeys, DataKeys, Schema, In, Out2, Errors, Opts);
@@ -63,8 +60,8 @@ validate(SchemaKeys, [K|DataKeys], Schema, In, Out, Errors, Opts) ->
 validate([K|SchemaKeys], DataKeys, Schema, In, Out, Errors, Opts) ->
     %% Key from Rule doesn't exist in Data
     Rules = oliver_maps:get(K, Schema),
-    IsRequired  = is_rule_exists(required, Rules),
-    IsDefault   = is_rule_exists(default, Rules),
+    IsRequired  = oliver_maps:is_key(required, Rules),
+    IsDefault   = oliver_maps:is_key(default, Rules),
     case {IsRequired, IsDefault} of
         {_, true} ->
             Args = oliver_maps:get(default, Rules),
@@ -101,31 +98,9 @@ apply_rule(Rule, Args, Acc, Opts, InData) when is_binary(Rule) ->
     AtomRule = binary_to_atom(Rule, utf8),
     apply_rule(AtomRule, Args, Acc, Opts, InData).
 
-which(Rule, AvailableRules) ->
-    maps:get(Rule, AvailableRules, undefined).
-
 get_return_type(Opts, InData) ->
     case oliver_maps:get(return, Opts, as_is) of
         map     -> map;
         list    -> list;
         as_is   -> oliver_maps:type(InData)
     end.
-
-is_rule_exists(Key, Atom) when is_atom(Atom) ->
-    Key =:= Atom;
-is_rule_exists(Key, Rules) ->
-    oliver_maps:is_key(Key, Rules).
-
-rules_fold(Fun, Init, Map) when is_map(Map) ->
-    maps:fold(Fun, Init, Map);
-rules_fold(Fun, Init, List) when is_list(List) ->
-    rules_foldl(Fun, Init, List);
-rules_fold(Fun, Init, Key) when is_atom(Key) ->
-    Fun(Key, [], Init).
-
-rules_foldl(F, Acc, [{K, V}|Tail]) ->
-    rules_foldl(F, F(K, V, Acc), Tail);
-rules_foldl(F, Acc, [K|Tail]) ->
-    rules_foldl(F, F(K, [], Acc), Tail);
-rules_foldl(_F, Acc, []) ->
-    Acc.

@@ -44,7 +44,9 @@ is_key(Key, List) when is_list(List) ->
     case lists:keyfind(Key, 1, List) of
         false -> lists:member(Key, List);
         _True -> true
-    end.
+    end;
+is_key(Key, Atom) when is_atom(Atom) ->
+    Key =:= Atom.
 
 is_empty(Map) when is_map(Map) ->
     maps:size(Map) =:= 0;
@@ -54,18 +56,22 @@ is_empty(List) when is_list(List) ->
         _   -> false
     end.
 
-fold(Fun, Init, Map) when is_map(Map) ->
-    maps:fold(Fun, Init, Map);
-fold(Fun, Init, List) when is_list(List) ->
-    foldl(Fun, Init, List).
-
 put(Key, Value, Map) when is_map(Map) ->
     maps:put(Key, Value, Map);
 put(Key, Value, List) when is_list(List) ->
     [{Key, Value}|List].
 
+fold(Fun, Init, Map) when is_map(Map) ->
+    maps:fold(Fun, Init, Map);
+fold(Fun, Init, List) when is_list(List) ->
+    foldl(Fun, Init, List);
+fold(Fun, Init, Key) when is_atom(Key) ->
+    Fun(Key, [], Init).
+
 %% internal
 foldl(F, Acc, [{K, V}|Tail]) ->
     foldl(F, F(K, V, Acc), Tail);
+foldl(F, Acc, [K|Tail]) ->
+    foldl(F, F(K, [], Acc), Tail);
 foldl(_F, Acc, []) ->
     Acc.
