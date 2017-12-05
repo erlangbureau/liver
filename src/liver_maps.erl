@@ -1,4 +1,4 @@
--module(oliver_maps).
+-module(liver_maps).
 
 %%
 %% This is a wrapper-module for maps and proplists modules

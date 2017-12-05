@@ -1,4 +1,4 @@
--module(oliver_float).
+-module(liver_float).
 
 %% API
 -export([to_binary/1]).

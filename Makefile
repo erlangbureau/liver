@@ -1,4 +1,4 @@
-PROJECT = oliver
+PROJECT = liver
 
 TEST_DEPS = LIVR jsx
 

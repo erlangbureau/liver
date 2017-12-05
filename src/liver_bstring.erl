@@ -1,4 +1,4 @@
--module(oliver_bstring).
+-module(liver_bstring).
 
 %% API
 -export([split/2]).

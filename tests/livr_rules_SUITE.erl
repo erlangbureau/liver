@@ -5,7 +5,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 -define(LIVR_TEST_PATH, "../../deps/LIVR/test_suite").
--define(EXAMPLE, "oliver:validate(~p, ~p) =:= ~p.~n").
+-define(EXAMPLE, "liver:validate(~p, ~p) =:= ~p.~n").
 -define(TEST_CASES, [
 
     %% common rules
@@ -59,7 +59,7 @@
     Type = ?config(init_type, Config),
     {Rules, Input, Output} = ?config(conditions, Config),
     Expected = expected_output(Type, Output),
-    case oliver:validate(Rules, Input) =:= Expected of
+    case liver:validate(Rules, Input) =:= Expected of
         true ->
             ok;
         false ->

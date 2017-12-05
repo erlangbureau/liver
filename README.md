@@ -1,7 +1,7 @@
-# Oliver
+# Liver
 ## DESCRIPTION
 
-Oliver is a lightweight Erlang validator based on LIVR Specification (See http://livr-spec.org for details)
+Liver is a lightweight Erlang validator based on LIVR Specification (See http://livr-spec.org for details)
 
 **Basic LIVR features:**
 
@@ -17,7 +17,7 @@ Oliver is a lightweight Erlang validator based on LIVR Specification (See http:/
 10. Multipurpose (user input validation, configs validation, contracts programming etc)
 11. Unicode support
 
-**Oliver specific features:**
+**Liver specific features:**
 1. Returns errors on all fields that do not have validation rules (strict mode)
 2. Ability to return custom error codes
 3. Additional set of rules for most typical Erlang situations
@@ -29,24 +29,24 @@ Oliver is a lightweight Erlang validator based on LIVR Specification (See http:/
   * For **rebar** add to rebar.config
   ```erl
 {deps, [
-    {oliver, ".*",
-        {git, "https://github.com/erlangbureau/oliver.git", {branch, master}}
+    {liver, ".*",
+        {git, "https://github.com/erlangbureau/liver.git", {branch, master}}
     }
 ]}.
 ```
 
   * For **erlang.mk** add to make file:
 ```erl
-DEPS = oliver
-dep_oliver = git https://github.com/erlangbureau/oliver.git master
+DEPS = liver
+dep_liver = git https://github.com/erlangbureau/liver.git master
 ```
 
-2. Add oliver in **your_project.app.src** file in tuple **applications**:
+2. Add liver in **your_project.app.src** file in tuple **applications**:
 ```erl
     {applications, [
         kernel,
         stdlib,
-        oliver
+        liver
     ]},
 ```
 3. Thats all, now you can validate data, register your own rules or add aliases for built-in rules.
@@ -60,14 +60,14 @@ Simple example:
 
 2> Input1 =  [{<<"first_name">>,<<"Vasya">>}].
 
-3> oliver:validate(Schema1, Input1).
+3> liver:validate(Schema1, Input1).
 {ok, [{<<"first_name">>,<<"Vasya">>}]}
 
 4> Schema2 = [{<<"number1">>,integer}].
 
 5> Input2 =  [{<<"number1">>,-1.12}].
 
-6> oliver:validate(Schema2, Input2).
+6> liver:validate(Schema2, Input2).
 {error, [{<<"number1">>,not_integer}]}
 ```
 More complex example
@@ -89,13 +89,13 @@ More complex example
                  {<<"extra_field">>, <<"will be removed">>}]},
             {<<"extra_field">>, <<"will be removed">>}].
 
-3> oliver:validate(Schema, Input).
+3> liver:validate(Schema, Input).
 {ok, [{<<"address">>,
            [{<<"country">>, <<"Ukraine">>},
             {<<"zip">>, 12345},
             {<<"street">>, <<"10">>},
             {<<"building">>, 10}]}]}
-4> oliver:validate(Schema, Input, [{strict, true}]).
+4> liver:validate(Schema, Input, [{strict, true}]).
 {error,[{<<"extra_field">>,unannounced},
         {<<"address">>,[{<<"extra_field">>,unannounced}]}]}
 ```

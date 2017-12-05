@@ -1,4 +1,4 @@
--module(oliver_livr_rules).
+-module(liver_livr_rules).
 
 %% API
 %% common rules
@@ -388,7 +388,7 @@ nested_object([List|_], Value, Opts, _InData)
         when is_list(List); is_map(List) ->
     nested_object(List, Value, Opts, _InData);
 nested_object(Args, Value, Opts, _InData) ->
-    oliver:validate(Args, Value, Opts).
+    liver:validate(Args, Value, Opts).
 
 list_of(_Args, <<>>, _Opts, _InData) ->
     {ok, <<>>};
@@ -396,7 +396,7 @@ list_of([List|_], Value, Opts, InData) when is_list(List); is_map(List) ->
     list_of(List, Value, Opts, InData);
 list_of(Rules, ListOfValues, Opts, _InData) when is_list(ListOfValues) ->
     Results = [begin
-        oliver:validate(#{'$fake_key' => Rules}, #{'$fake_key' => Value}, Opts)
+        liver:validate(#{'$fake_key' => Rules}, #{'$fake_key' => Value}, Opts)
     end || Value <- ListOfValues],
     case lists:keymember(error, 1, Results) of
         false ->
@@ -419,7 +419,7 @@ list_of_objects(_Args, <<>>, _Opts, _InData) ->
 list_of_objects([List|_], Value, Opts, InData) when is_list(List); is_map(List) ->
     list_of_objects(List, Value, Opts, InData);
 list_of_objects(Schema, Objects, Opts, _InData) when is_list(Objects) ->
-    Results = [oliver:validate(Schema, Object, Opts) || Object <- Objects],
+    Results = [liver:validate(Schema, Object, Opts) || Object <- Objects],
     case lists:keymember(error, 1, Results) of
         false ->
             ListOfValues2 = [Val || {ok, Val} <- Results],
@@ -443,9 +443,9 @@ list_of_different_objects([List|_], Value, Opts, InData) when is_list(List) ->
 list_of_different_objects([Field, Schemas|_], Objects, Opts, _InData)
         when is_list(Objects) ->
     Results = [begin
-        Type = oliver_maps:get(Field, Object, undefined),
-        Schema = oliver_maps:get(Type, Schemas, undefined),
-        oliver:validate(Schema, Object, Opts)
+        Type = liver_maps:get(Field, Object, undefined),
+        Schema = liver_maps:get(Type, Schemas, undefined),
+        liver:validate(Schema, Object, Opts)
     end || Object <- Objects],
     case lists:keymember(error, 1, Results) of
         false ->
@@ -469,7 +469,7 @@ list_of_different_objects(_Args, _Value, _Opts, _InData) ->
 
 %% modifiers (previously - "filter rules")
 trim(_Args, Value, _Opts, _InData) when is_binary(Value) ->
-    Value2 = oliver_bstring:trim(Value),
+    Value2 = liver_bstring:trim(Value),
     {ok, Value2};
 trim(Args, Value, Opts, InData) when is_number(Value) ->
     Value2 = number_to_binary(Value),
@@ -478,7 +478,7 @@ trim(_Args, Value, _Opts, _InData) ->
     {ok, Value}.
 
 to_lc(_Args, Value, _Opts, _InData) when is_binary(Value) ->
-    Value2 = oliver_bstring:to_lower(Value),
+    Value2 = liver_bstring:to_lower(Value),
     {ok, Value2};
 to_lc(Args, Value, Opts, InData) when is_number(Value) ->
     Value2 = number_to_binary(Value),
@@ -487,7 +487,7 @@ to_lc(_Args, Value, _Opts, _InData) ->
     {ok, Value}.
 
 to_uc(_Args, Value, _Opts, _InData) when is_binary(Value) ->
-    Value2 = oliver_bstring:to_upper(Value),
+    Value2 = liver_bstring:to_upper(Value),
     {ok, Value2};
 to_uc(Args, Value, Opts, InData) when is_number(Value) ->
     Value2 = number_to_binary(Value),
@@ -498,7 +498,7 @@ to_uc(_Args, Value, _Opts, _InData) ->
 remove([Pattern|_], Value, _Opts, _InData) ->
     remove(Pattern, Value, _Opts, _InData);
 remove(Pattern, Value, _Opts, _InData) when is_binary(Pattern), is_binary(Value) ->
-    Value2 = oliver_bstring:remove_chars(Value, Pattern),
+    Value2 = liver_bstring:remove_chars(Value, Pattern),
     {ok, Value2};
 remove(_Args, Value, _Opts, _InData) ->
     {ok, Value}.
@@ -506,12 +506,12 @@ remove(_Args, Value, _Opts, _InData) ->
 leave_only([Pattern|_], Value, Opts, InData) ->
     leave_only(Pattern, Value, Opts, InData);
 leave_only(Pattern, Value, _Opts, _InData) when is_binary(Pattern), is_binary(Value) ->
-    Value2 = oliver_bstring:leave_chars(Value, Pattern),
+    Value2 = liver_bstring:leave_chars(Value, Pattern),
     {ok, Value2};
 leave_only(_Args, Value, _Opts, _InData) ->
     {ok, Value}.
 
-default([{}], _Value, Opts, InData) ->
+default([{}], _Value, _Opts, _InData) ->
     {ok, [{}]};
 default([Default], _Value, Opts, InData) ->
     default(Default, _Value, Opts, InData);
@@ -521,7 +521,7 @@ default(Default, undefined, _Opts, _InData) ->
     {ok, Default};
 default(Default, null, _Opts, _InData) ->
     {ok, Default};
-default(Default, Value, _Opts, _InData) ->
+default(_Default, Value, _Opts, _InData) ->
     {ok, Value}.
 
 %% internal
@@ -540,7 +540,7 @@ to_binary(Value) when is_binary(Value) ->
 number_to_binary(Value) when is_integer(Value) ->
     integer_to_binary(Value);
 number_to_binary(Value) when is_float(Value) ->
-    oliver_float:to_binary(Value).
+    liver_float:to_binary(Value).
 
 binary_to_number(Value) ->
     case binary:match(Value, <<",">>) of
