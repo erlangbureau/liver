@@ -51,11 +51,11 @@
 %% API
 %% common rules
 required(_Args, <<>>, _Opts, _InData) ->
-    {error, format_error};
+    {error, required};
 required(_Args, null, _Opts, _InData) ->
-    {error, format_error};
+    {error, required};
 required(_Args, undefined, _Opts, _InData) ->
-    {error, format_error};
+    {error, required};
 required(_Args, Value, _Opts, _InData) ->
     {ok, Value}.
 
@@ -67,16 +67,31 @@ not_empty(_Args, Value, _Opts, _InData) ->
 
 not_empty_list(_Args, Value, _Opts, _InData) ->
     case Value of
-        [_|_]   -> {ok, Value};
-        []      -> {error, cannot_be_empty}
+        <<>>        -> {error, cannot_be_empty};
+        [{}]        -> {error, format_error};
+        []          -> {error, cannot_be_empty};
+        [_|_]       -> {ok, Value};
+        undefined   -> {error, cannot_be_empty};
+        _           -> {error, format_error}
     end.
 
 any_object(_Args, Value, _Opts, _InData) ->
     case Value of
-        #{}     -> {ok, Value};
-        [{}]    -> {ok, Value};
-        [_|_]   -> proplist(Value);
-        []      -> {error, format_error}
+        <<>> ->
+            {ok, Value};
+        #{} ->
+            {ok, Value};
+        [{}] ->
+            {ok, Value};
+        [_|_] ->
+            case is_proplist(Value) of
+                true ->
+                    {ok, Value};
+                false ->
+                    {error, format_error}
+            end;
+        _ ->
+            {error, format_error}
     end.
 
 %% string rules
@@ -88,13 +103,15 @@ string(_Args, Value, Opts, InData) when is_number(Value) ->
 string(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+eq(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 eq([Equivalent], Value, Opts, InData) ->
     eq(Equivalent, Value, Opts, InData);
 eq(Value, Value, _Opts, _InData) ->
     {ok, Value};
-eq(Equivalent, Value, _Opts, _InData) when Equivalent == Value ->
-    Value2 = trunc(Value),
-    {ok, Value2};
+%eq(Equivalent, Value, _Opts, _InData) when Equivalent == Value ->
+%    Value2 = trunc(Value),
+%    {ok, Value2};
 eq(Equivalent, Value, Opts, InData) when is_binary(Equivalent), is_number(Value) ->
     Value2 = number_to_binary(Value),
     eq(Equivalent, Value2, Opts, InData);
@@ -106,7 +123,7 @@ eq(Equivalent, Value, Opts, InData) when is_number(Equivalent), is_binary(Value)
         error:badarg ->
             {error, not_allowed_value}
     end;
-eq(Equivalent, Value, _Opts, _InData) when is_list(Equivalent); is_list(Value) ->
+eq(_Equivalent, Value, _Opts, _InData) when is_map(Value); is_list(Value) ->
     {error, format_error};
 eq(_Equivalent, _Value, _Opts, _InData) ->
     {error, not_allowed_value}.
@@ -117,8 +134,8 @@ one_of([Equivalent|List], Value, Opts, InData) ->
     case eq(Equivalent, Value, Opts, InData) of
         {error, not_allowed_value} ->
             one_of(List, Value, Opts, InData);
-        {ok, Value} ->
-            {ok, Value}
+        {ok, Value2} ->
+            {ok, Value2}
     end;
 one_of([], _Value, _Opts, _InData) ->
     {error, not_allowed_value};
@@ -139,6 +156,8 @@ max_length(MaxLength, Value, Opts, InData) when is_number(Value) ->
 max_length(_MaxLength, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+min_length(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 min_length([MinLength|_], Value, _Opts, _InData) ->
     min_length(MinLength, Value, _Opts, _InData);
 min_length(MinLength, Value, _Opts, _InData) when is_binary(Value) ->
@@ -153,6 +172,8 @@ min_length(MinLength, Value, _Opts, _InData) when is_number(Value) ->
 min_length(_MinLength, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+length_between(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 length_between([[Min, Max]|_], Value, _Opts, _InData) ->
     length_between([Min, Max], Value, _Opts, _InData);
 length_between([Min, Max|_], Value, _Opts, _InData) when is_binary(Value) ->
@@ -169,6 +190,8 @@ length_between([Min, Max|_], Value, Opts, InData) when is_number(Value) ->
 length_between(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+length_equal(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 length_equal([Length|_], Value, Opts, InData) ->
     length_equal(Length, Value, Opts, InData);
 length_equal(Length, Value, _Opts, _InData) when is_binary(Value) ->
@@ -185,6 +208,8 @@ length_equal(Length, Value, Opts, InData) when is_number(Value) ->
 length_equal(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+like(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 like(Args, Value, _Opts, _InData) when is_binary(Value); is_number(Value) ->
     Value2 = to_binary(Value),
     {Pattern, ReOpts} = case Args of
@@ -205,19 +230,23 @@ like(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
 %% numeric rules
+integer(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 integer(_Args, Value, _Opts, _InData) when is_integer(Value) ->
-    {ok, Value, _Opts, _InData};
+    {ok, Value};
 integer(_Args, Value, _Opts, _InData) when is_binary(Value) ->
-    convert(binary_to_integer, Value, {error, not_integer});
+    convert(binary_to_integer, Value, not_integer);
 integer(_Args, Value, _Opts, _InData) when is_float(Value) ->
     {error, not_integer};
 integer(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+positive_integer(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 positive_integer(_Args, Value, _Opts, _InData) when is_integer(Value), Value > 0 ->
     {ok, Value};
 positive_integer(_Args, Value, _Opts, _InData) when is_binary(Value) ->
-    case convert(binary_to_integer, Value, {error, not_positive_integer}) of
+    case convert(binary_to_integer, Value, not_positive_integer) of
         {ok, Value2} = OK when Value2 > 0 ->
             OK;
         _Err ->
@@ -228,22 +257,35 @@ positive_integer(_Args, Value, _Opts, _InData) when is_integer(Value); is_float(
 positive_integer(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+decimal(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 decimal(_Args, Value, _Opts, _InData) when is_float(Value) ->
     {ok, Value};
 decimal(_Args, Value, _Opts, _InData) when is_binary(Value) ->
-    convert(binary_to_float, Value, {error, not_decimal});
+    try binary_to_number(Value) of
+        Value2 ->
+            {ok, Value2}
+    catch
+        _:_ ->
+            {error, not_decimal}
+    end;
 decimal(_Args, Value, _Opts, _InData) when is_integer(Value) ->
     {error, not_decimal};
 decimal(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+positive_decimal(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 positive_decimal(_Args, Value, _Opts, _InData) when is_float(Value), Value > 0 ->
     {ok, Value};
 positive_decimal(_Args, Value, _Opts, _InData) when is_binary(Value) ->
-    case convert(binary_to_float, Value, {error, not_positive_decimal}) of
-        {ok, Value2} = OK when Value2 > 0 ->
-            OK;
+    try binary_to_number(Value) of
+        Value2 when Value2 > 0 ->
+            {ok, Value2};
         _Err ->
+            {error, not_positive_decimal}
+    catch
+        _:_ ->
             {error, not_positive_decimal}
     end;
 positive_decimal(_Args, Value, _Opts, _InData) when is_float(Value); is_integer(Value) ->
@@ -251,6 +293,8 @@ positive_decimal(_Args, Value, _Opts, _InData) when is_float(Value); is_integer(
 positive_decimal(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+max_number(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 max_number([Max|_], Value, Opts, InData) ->
     max_number(Max, Value, Opts, InData);
 max_number(Max, Value, _Opts, _InData) when is_number(Value) ->
@@ -273,6 +317,8 @@ max_number(Max, Value, _Opts, _InData) when is_binary(Value) ->
 max_number(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+min_number(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 min_number([Min|_], Value, Opts, InData) ->
     min_number(Min, Value, Opts, InData);
 min_number(Min, Value, _Opts, _InData) when is_number(Value) ->
@@ -295,6 +341,8 @@ min_number(Min, Value, _Opts, _InData) when is_binary(Value) ->
 min_number(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+number_between(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 number_between([[Min, Max]|_], Value, Opts, InData) ->
     number_between([Min, Max], Value, Opts, InData);
 number_between([Min, Max|_], Value, _Opts, _InData) when is_number(Value) ->
@@ -342,6 +390,8 @@ nested_object([List|_], Value, Opts, _InData)
 nested_object(Args, Value, Opts, _InData) ->
     oliver:validate(Args, Value, Opts).
 
+list_of(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 list_of([List|_], Value, Opts, InData) when is_list(List); is_map(List) ->
     list_of(List, Value, Opts, InData);
 list_of(Rules, ListOfValues, Opts, _InData) when is_list(ListOfValues) ->
@@ -364,6 +414,8 @@ list_of(Rules, ListOfValues, Opts, _InData) when is_list(ListOfValues) ->
 list_of(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+list_of_objects(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 list_of_objects([List|_], Value, Opts, InData) when is_list(List); is_map(List) ->
     list_of_objects(List, Value, Opts, InData);
 list_of_objects(Schema, Objects, Opts, _InData) when is_list(Objects) ->
@@ -384,15 +436,17 @@ list_of_objects(Schema, Objects, Opts, _InData) when is_list(Objects) ->
 list_of_objects(_Args, _Value, _Opts, _InData) ->
     {error, format_error}.
 
+list_of_different_objects(_Args, <<>>, _Opts, _InData) ->
+    {ok, <<>>};
 list_of_different_objects([List|_], Value, Opts, InData) when is_list(List) ->
     list_of_different_objects(List, Value, Opts, InData);
 list_of_different_objects([Field, Schemas|_], Objects, Opts, _InData)
         when is_list(Objects) ->
     Results = [begin
-        Type = oliver_maps:get(Field, Object),
-        Schema = oliver_maps:get(Type, Schemas),
+        Type = oliver_maps:get(Field, Object, undefined),
+        Schema = oliver_maps:get(Type, Schemas, undefined),
         oliver:validate(Schema, Object, Opts)
-    end || Object <- Objects, oliver_maps:is_key(Field, Object)],
+    end || Object <- Objects],
     case lists:keymember(error, 1, Results) of
         false ->
             ListOfValues2 = [Val || {ok, Val} <- Results],
@@ -457,23 +511,26 @@ leave_only(Pattern, Value, _Opts, _InData) when is_binary(Pattern), is_binary(Va
 leave_only(_Args, Value, _Opts, _InData) ->
     {ok, Value}.
 
+default([{}], _Value, Opts, InData) ->
+    {ok, [{}]};
 default([Default], _Value, Opts, InData) ->
     default(Default, _Value, Opts, InData);
 default(Default, <<>>, _Opts, _InData) ->
     {ok, Default};
-default(Default, _Value, _Opts, _InData) ->
-    {ok, Default}.
+default(Default, undefined, _Opts, _InData) ->
+    {ok, Default};
+default(Default, null, _Opts, _InData) ->
+    {ok, Default};
+default(Default, Value, _Opts, _InData) ->
+    {ok, Value}.
 
 %% internal
-proplist(Value) ->
-    proplist(Value, Value).
-
-proplist([{_, _}|T], Value) ->
-    proplist(T, Value);
-proplist([], Value) ->
-    {ok, Value};
-proplist([_|_], _Value) ->
-    {error, format_error}.
+is_proplist([{_, _}|T]) ->
+    is_proplist(T);
+is_proplist([_|_]) ->
+    false;
+is_proplist([]) ->
+    true.
 
 to_binary(Value) when is_number(Value) ->
     number_to_binary(Value);
@@ -486,14 +543,17 @@ number_to_binary(Value) when is_float(Value) ->
     oliver_float:to_binary(Value).
 
 binary_to_number(Value) ->
-    try erlang:binary_to_integer(Value)
-    catch
-        error:badarg -> erlang:binary_to_float(Value)
+    case binary:match(Value, <<",">>) of
+        nomatch ->
+            try erlang:binary_to_integer(Value)
+            catch
+                error:badarg -> erlang:binary_to_float(Value)
+            end
     end.
 
 convert(FromTo, Value, Err) ->
     try erlang:FromTo(Value) of
         Value2 -> {ok, Value2}
     catch
-        error:badarg -> Err
+        error:badarg -> {error, Err}
     end.

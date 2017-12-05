@@ -87,7 +87,7 @@ leave_chars(BinString, Pattern, Acc) ->
             <<_:A/binary, Match:B/binary, After/binary>> = BinString,
             leave_chars(After, Pattern, <<Acc/binary, Match/binary>>);
         nomatch ->
-            <<Acc/binary, BinString/binary>>
+            <<Acc/binary>>
     end.
 
 -spec trim(BinString1) -> BinString2
