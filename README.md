@@ -1,7 +1,8 @@
 # Liver
 [![Build Status](https://travis-ci.org/erlangbureau/liver.svg?branch=master)](https://travis-ci.org/erlangbureau/liver)
+[![Coverage Status](https://coveralls.io/repos/github/erlangbureau/liver/badge.svg?branch=master)](https://coveralls.io/github/erlangbureau/liver?branch=master)
 ## DESCRIPTION
-[![Build Status](https://www.halstedsurgery.org/Upload/200710291014_3602_000.jpg)]()
+[![Logo](https://www.halstedsurgery.org/Upload/200710291014_3602_000.jpg)]()
 
 Liver is a lightweight Erlang validator based on LIVR Specification (See http://livr-spec.org for details)
 
