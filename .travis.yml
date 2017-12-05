@@ -1,0 +1,6 @@
+language: erlang
+script: "make && make tests"
+otp_release:
+   - 18.3
+   - 19.3
+   - 20.1
