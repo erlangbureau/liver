@@ -10,28 +10,23 @@
 -export([get/2, get/3]).
 -export([reverse/1]).
 -export([keys/1]).
--export([is_keyvalue/1]).
 -export([is_key/2]).
 -export([is_empty/1]).
--export([fold/3]).
 -export([put/3]).
+-export([map/2]).
+-export([fold/3]).
 
 
 %% API
 new(map) ->
     #{};
-new(list) ->
+new(proplist) ->
     [{}].
 
 type(Value) when is_map(Value) ->
     map;
 type(Value) when is_list(Value) ->
-    list.
-
-is_keyvalue(Data) when is_map(Data); is_list(Data) ->
-    true;
-is_keyvalue(_Data) ->
-    false.
+    proplist.
 
 get(Key, List)->
     get(Key, List, undefined).
@@ -82,6 +77,11 @@ put(Key, Value, [{}]) ->
     [{Key, Value}];
 put(Key, Value, List) when is_list(List) ->
     [{Key, Value}|List].
+
+map(Fun, Map) when is_map(Map) ->
+    maps:map(Fun, Map);
+map(Fun, List) when is_list(List) ->
+    [{K, Fun(K, V)}|| {K, V} <- List].
 
 fold(Fun, Init, Map) when is_map(Map) ->
     maps:fold(Fun, Init, Map);

@@ -108,9 +108,9 @@ sift([], [], Acc) ->
 
 get_return_type(Opts, InData) ->
     case liver_maps:get(return, Opts, as_is) of
-        map     -> map;
-        list    -> list;
-        as_is   -> liver_maps:type(InData)
+        map         -> map;
+        propllist   -> proplist;
+        as_is       -> liver_maps:type(InData)
     end.
 
 custom_error_message(Code) ->

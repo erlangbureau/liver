@@ -513,18 +513,18 @@ trim(_Args, Value, _Opts) ->
 to_lc(_Args, Value, _Opts) when is_binary(Value) ->
     Value2 = liver_bstring:to_lower(Value),
     {ok, Value2};
-to_lc(Args, Value, Opts) when is_number(Value) ->
+to_lc(_Args, Value, _Opts) when is_number(Value) ->
     Value2 = number_to_binary(Value),
-    to_lc(Args, Value2, Opts);
+    {ok, Value2};
 to_lc(_Args, Value, _Opts) ->
     {ok, Value}.
 
 to_uc(_Args, Value, _Opts) when is_binary(Value) ->
     Value2 = liver_bstring:to_upper(Value),
     {ok, Value2};
-to_uc(Args, Value, Opts) when is_number(Value) ->
+to_uc(_Args, Value, _Opts) when is_number(Value) ->
     Value2 = number_to_binary(Value),
-    to_uc(Args, Value2, Opts);
+    {ok, Value2};
 to_uc(_Args, Value, _Opts) ->
     {ok, Value}.
 

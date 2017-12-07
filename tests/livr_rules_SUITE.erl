@@ -340,12 +340,12 @@ expected_output(negative, Output) ->
     {error, Output}.
 
 parse_hack(iso_date, {Rules, Input, Output}) ->
-    Fun = fun(K, V) ->
+    Fun = fun(_K, V) ->
         try {Date, _Time} = iso8601:parse(V), Date
         catch _:_ -> V
         end
     end,
-    Output2 = maps:map(Fun, Output),
+    Output2 = liver_maps:map(Fun, Output),
     {Rules, Input, Output2};
 parse_hack(_, Conditions) ->
     Conditions.
