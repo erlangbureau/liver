@@ -1,10 +1,11 @@
 PROJECT = liver
 
-TEST_DEPS = LIVR jsx
+TEST_DEPS = LIVR jsx iso8601
 
-dep_jsx = git https://github.com/talentdeficit/jsx.git  v2.8.3
-dep_LIVR = git https://github.com/koorchik/LIVR         master
-dep_ecoveralls = git https://github.com/nifoc/ecoveralls master
+dep_jsx         = git https://github.com/talentdeficit/jsx.git  v2.8.3
+dep_LIVR        = git https://github.com/koorchik/LIVR          master
+dep_iso8601     = git https://github.com/erlsci/iso8601.git     1.3
+dep_ecoveralls  = git https://github.com/nifoc/ecoveralls       master
 
 ifeq ($(USER),travis)
 	TEST_DEPS += ecoveralls

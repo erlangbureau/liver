@@ -34,10 +34,10 @@
     number_between,
 
     %% special rules
-%        email,
+    email,
 %        url,
-%        iso_date,
-%        equal_to_field,
+    iso_date,
+    equal_to_field,
 %
     %% meta rules
     nested_object,
@@ -90,7 +90,8 @@ init_per_testcase(Name, Config) ->
     Type = ?config(init_type, Config),
     case read_conditions(Name, Type) of
         {ok, Conditions} ->
-            [{conditions, Conditions}|Config];
+            Conditions2 = parse_hack(Name, Conditions),
+            [{conditions, Conditions2}|Config];
         skip ->
             {skipped, no_data}
     end.
@@ -155,6 +156,15 @@ min_number(Config) ->
 number_between(Config) ->
     ?RUN(Config).
 
+email(Config) ->
+    ?RUN(Config).
+
+iso_date(Config) ->
+    ?RUN(Config).
+
+equal_to_field(Config) ->
+    ?RUN(Config).
+
 nested_object(Config) ->
     ?RUN(Config).
 
@@ -209,42 +219,26 @@ case_to_path(not_empty, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/02-not_empty/"};
 case_to_path(not_empty, negative) ->
     {ok, ?LIVR_TEST_PATH ++ "/negative/02-not_empty/"};
-case_to_path(not_empty_list, positive) ->
-    {ok, ?LIVR_TEST_PATH ++ "/positive/22-not_empty_list/"};
-case_to_path(not_empty_list, negative) ->
-    {ok, ?LIVR_TEST_PATH ++ "/negative/22-not_empty_list/"};
-case_to_path(any_object, positive) ->
-    {ok, ?LIVR_TEST_PATH ++ "/positive/27-any_object/"};
-case_to_path(any_object, negative) ->
-    {ok, ?LIVR_TEST_PATH ++ "/negative/27-any_object/"};
-case_to_path(string, positive) ->
-    {ok, ?LIVR_TEST_PATH ++ "/positive/26-string/"};
-case_to_path(string, negative) ->
-    {ok, ?LIVR_TEST_PATH ++ "/negative/26-string/"};
-case_to_path(eq, positive) ->
-    {ok, ?LIVR_TEST_PATH ++ "/positive/25-eq/"};
-case_to_path(eq, negative) ->
-    {ok, ?LIVR_TEST_PATH ++ "/negative/25-eq/"};
 case_to_path(one_of, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/03-one_of/"};
 case_to_path(one_of, negative) ->
     {ok, ?LIVR_TEST_PATH ++ "/negative/03-one_of/"};
-case_to_path(max_length, positive) ->
-    {ok, ?LIVR_TEST_PATH ++ "/positive/05-max_length/"};
-case_to_path(max_length, negative) ->
-    {ok, ?LIVR_TEST_PATH ++ "/negative/05-max_length/"};
 case_to_path(min_length, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/04-min_length/"};
 case_to_path(min_length, negative) ->
     {ok, ?LIVR_TEST_PATH ++ "/negative/04-min_length/"};
-case_to_path(length_between, positive) ->
-    {ok, ?LIVR_TEST_PATH ++ "/positive/07-length_between/"};
-case_to_path(length_between, negative) ->
-    {ok, ?LIVR_TEST_PATH ++ "/negative/07-length_between/"};
+case_to_path(max_length, positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/05-max_length/"};
+case_to_path(max_length, negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/05-max_length/"};
 case_to_path(length_equal, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/06-length_equal/"};
 case_to_path(length_equal, negative) ->
     {ok, ?LIVR_TEST_PATH ++ "/negative/06-length_equal/"};
+case_to_path(length_between, positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/07-length_between/"};
+case_to_path(length_between, negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/07-length_between/"};
 case_to_path(like, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/08-like/"};
 case_to_path(like, negative) ->
@@ -277,6 +271,14 @@ case_to_path(number_between, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/15-number_between/"};
 case_to_path(number_between, negative) ->
     {ok, ?LIVR_TEST_PATH ++ "/negative/15-number_beetween/"};
+case_to_path(email, positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/16-email/"};
+case_to_path(email, negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/16-email/"};
+case_to_path(equal_to_field, positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/17-equal_to_field/"};
+case_to_path(equal_to_field, negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/17-equal_to_field/"};
 case_to_path(nested_object, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/18-nested_object/"};
 case_to_path(nested_object, negative) ->
@@ -293,6 +295,29 @@ case_to_path(list_of_different_objects, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/21-list_of_different_objects/"};
 case_to_path(list_of_different_objects, negative) ->
     {ok, ?LIVR_TEST_PATH ++ "/negative/21-list_of_different_objects/"};
+case_to_path(not_empty_list, positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/22-not_empty_list/"};
+case_to_path(not_empty_list, negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/22-not_empty_list/"};
+
+
+case_to_path(iso_date, positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/24-iso_date/"};
+case_to_path(iso_date, negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/24-iso_date/"};
+case_to_path(eq, positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/25-eq/"};
+case_to_path(eq, negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/25-eq/"};
+case_to_path(string, positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/26-string/"};
+case_to_path(string, negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/26-string/"};
+case_to_path(any_object, positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/27-any_object/"};
+case_to_path(any_object, negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/27-any_object/"};
+
 
 case_to_path(trim, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/30-trim/"};
@@ -314,9 +339,20 @@ expected_output(positive, Output) ->
 expected_output(negative, Output) ->
     {error, Output}.
 
+parse_hack(iso_date, {Rules, Input, Output}) ->
+    Fun = fun(K, V) ->
+        try {Date, _Time} = iso8601:parse(V), Date
+        catch _:_ -> V
+        end
+    end,
+    Output2 = maps:map(Fun, Output),
+    {Rules, Input, Output2};
+parse_hack(_, Conditions) ->
+    Conditions.
+
 decode(Json) ->
     try
-        jsx:decode(Json, [])
+        jsx:decode(Json, [return_maps])
     catch
         _:_ -> json_parsing_error
     end.

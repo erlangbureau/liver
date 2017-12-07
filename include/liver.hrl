@@ -47,18 +47,21 @@
 }).
 
 -define(DEFAULT_LIVR_ERRORS, #{
-    format_error            => <<"FORMAT_ERROR">>,
     required                => <<"REQUIRED">>,
+    format_error            => <<"FORMAT_ERROR">>,
     cannot_be_empty         => <<"CANNOT_BE_EMPTY">>,
-    not_allowed_value       => <<"NOT_ALLOWED_VALUE">>,
     too_long                => <<"TOO_LONG">>,
     too_short               => <<"TOO_SHORT">>,
-    wrong_format            => <<"WRONG_FORMAT">>,
+    too_high                => <<"TOO_HIGH">>,
+    too_low                 => <<"TOO_LOW">>,
+    not_allowed_value       => <<"NOT_ALLOWED_VALUE">>,
+    not_number              => <<"NOT_NUMBER">>,
     not_integer             => <<"NOT_INTEGER">>,
     not_positive_integer    => <<"NOT_POSITIVE_INTEGER">>,
     not_decimal             => <<"NOT_DECIMAL">>,
     not_positive_decimal    => <<"NOT_POSITIVE_DECIMAL">>,
-    too_high                => <<"TOO_HIGH">>,
-    too_low                 => <<"TOO_LOW">>,
-    not_number              => <<"NOT_NUMBER">>
+    wrong_format            => <<"WRONG_FORMAT">>,
+    wrong_date              => <<"WRONG_DATE">>,
+    wrong_email             => <<"WRONG_EMAIL">>,
+    fields_not_equal        => <<"FIELDS_NOT_EQUAL">>
 }).

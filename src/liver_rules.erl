@@ -11,7 +11,8 @@ normalize(Rules) ->
     normalize(Rules, []).
 
 normalize(Rules, Data) ->
-    lists:reverse(normilize(Rules, Data, [])).
+    Result = normilize(Rules, Data, []),
+    lists:reverse(Result).
 
 apply(Rules, Value, Opts) ->
     ApplyFun = fun(Rule, RuleArgs, Acc) ->
@@ -36,19 +37,29 @@ apply_required(Rules, Opts) ->
 
 
 %% internal
-normilize([{K, _V} = Rule|Rules], Data, Acc) when is_atom(K) ->
-    normilize(Rules, Data, [Rule|Acc]);
+normilize([{K, V} = Rule|Rules], Data, Acc) when is_atom(K) ->
+    case K of
+        equal_to_field ->
+            Name = case V of
+                [FieldName|_]   -> FieldName;
+                FieldName       -> FieldName
+            end,
+            FieldValue = liver_maps:get(Name, Data, undefined),
+            normilize(Rules, Data, [{equal_to_field, FieldValue}|Acc]);
+        _ ->
+            normilize(Rules, Data, [Rule|Acc])
+    end;
 normilize(Rules, Data, Acc) when is_map(Rules) ->
     Rules2 = maps:to_list(Rules),
     normilize(Rules2, Data, Acc);
 normilize([{K, V}|Rules], Data, Acc) when is_binary(K) ->
     K2 = binary_to_atom(K, utf8),
-    normilize(Rules, Data, [{K2, V}|Acc]);
-normilize(Rule, _Data, Acc) when is_atom(Rule) ->
-    [{Rule, []}|Acc];
-normilize(Rule, _Data, Acc) when is_binary(Rule) ->
+    normilize([{K2, V}|Rules], Data, Acc);
+normilize(K, Data, Acc) when is_atom(K) ->
+    normilize([{K, []}], Data, Acc);
+normilize(Rule, Data, Acc) when is_binary(Rule) ->
     K2 = binary_to_atom(Rule, utf8),
-    [{K2, []}|Acc];
+    normilize([{K2, []}], Data, Acc);
 normilize([Rule|Rules], Data, Acc) when is_map(Rule) ->
     Rules2 = maps:to_list(Rule),
     Acc2 = normilize(Rules2, Data, Acc),
@@ -71,7 +82,7 @@ is_required(_)              -> false.
 
 apply(Rule, Args, {ok, Value}, Opts) ->
     Module = liver:which(Rule),
-    try Module:Rule(Args, Value, Opts, [])
+    try Module:Rule(Args, Value, Opts)
     catch
         error:undef ->
             {error, {unimplemented_rule, Rule}};
