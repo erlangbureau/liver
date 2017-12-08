@@ -32,6 +32,7 @@
 
     %% meta rules
     nested_object               => liver_livr_rules,
+    variable_object             => liver_livr_rules,
     list_of                     => liver_livr_rules,
     list_of_objects             => liver_livr_rules,
     list_of_different_objects   => liver_livr_rules,
@@ -63,5 +64,6 @@
     wrong_format            => <<"WRONG_FORMAT">>,
     wrong_date              => <<"WRONG_DATE">>,
     wrong_email             => <<"WRONG_EMAIL">>,
+    wrong_url               => <<"WRONG_URL">>,
     fields_not_equal        => <<"FIELDS_NOT_EQUAL">>
 }).

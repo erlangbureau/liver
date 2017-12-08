@@ -1,17 +1,14 @@
 -module(liver_rules).
 
 %% API
--export([normalize/1, normalize/2]).
+-export([normalize/2]).
 -export([apply/3]).
 -export([has_required/1]).
 -export([apply_required/2]).
 
 %% API
-normalize(Rules) ->
-    normalize(Rules, []).
-
 normalize(Rules, Data) ->
-    Result = normilize(Rules, Data, []),
+    Result = normalize(Rules, Data, []),
     lists:reverse(Result).
 
 apply(Rules, Value, Opts) ->
@@ -37,7 +34,7 @@ apply_required(Rules, Opts) ->
 
 
 %% internal
-normilize([{K, V} = Rule|Rules], Data, Acc) when is_atom(K) ->
+normalize([{K, V} = Rule|Rules], Data, Acc) when is_atom(K) ->
     case K of
         equal_to_field ->
             Name = case V of
@@ -45,34 +42,34 @@ normilize([{K, V} = Rule|Rules], Data, Acc) when is_atom(K) ->
                 FieldName       -> FieldName
             end,
             FieldValue = liver_maps:get(Name, Data, undefined),
-            normilize(Rules, Data, [{equal_to_field, FieldValue}|Acc]);
+            normalize(Rules, Data, [{equal_to_field, FieldValue}|Acc]);
         _ ->
-            normilize(Rules, Data, [Rule|Acc])
+            normalize(Rules, Data, [Rule|Acc])
     end;
-normilize(Rules, Data, Acc) when is_map(Rules) ->
+normalize(Rules, Data, Acc) when is_map(Rules) ->
     Rules2 = maps:to_list(Rules),
-    normilize(Rules2, Data, Acc);
-normilize([{K, V}|Rules], Data, Acc) when is_binary(K) ->
+    normalize(Rules2, Data, Acc);
+normalize([{K, V}|Rules], Data, Acc) when is_binary(K) ->
     K2 = binary_to_atom(K, utf8),
-    normilize([{K2, V}|Rules], Data, Acc);
-normilize(K, Data, Acc) when is_atom(K) ->
-    normilize([{K, []}], Data, Acc);
-normilize(Rule, Data, Acc) when is_binary(Rule) ->
+    normalize([{K2, V}|Rules], Data, Acc);
+normalize(K, Data, Acc) when is_atom(K) ->
+    normalize([{K, []}], Data, Acc);
+normalize(Rule, Data, Acc) when is_binary(Rule) ->
     K2 = binary_to_atom(Rule, utf8),
-    normilize([{K2, []}], Data, Acc);
-normilize([Rule|Rules], Data, Acc) when is_map(Rule) ->
+    normalize([{K2, []}], Data, Acc);
+normalize([Rule|Rules], Data, Acc) when is_map(Rule) ->
     Rules2 = maps:to_list(Rule),
-    Acc2 = normilize(Rules2, Data, Acc),
-    normilize(Rules, Data, Acc2);
-normilize([Rules|Rules2], Data, Acc) when is_list(Rules) ->
-    Acc2 = normilize(Rules, Data, Acc),
-    normilize(Rules2, Data, Acc2);
-normilize([K|Rules], Data, Acc) when is_atom(K) ->
-    normilize(Rules, Data, [{K, []}|Acc]);
-normilize([K|Rules], Data, Acc) when is_binary(K) ->
+    Acc2 = normalize(Rules2, Data, Acc),
+    normalize(Rules, Data, Acc2);
+normalize([Rules|Rules2], Data, Acc) when is_list(Rules) ->
+    Acc2 = normalize(Rules, Data, Acc),
+    normalize(Rules2, Data, Acc2);
+normalize([K|Rules], Data, Acc) when is_atom(K) ->
+    normalize(Rules, Data, [{K, []}|Acc]);
+normalize([K|Rules], Data, Acc) when is_binary(K) ->
     K2 = binary_to_atom(K, utf8),
-    normilize(Rules, Data, [{K2, []}|Acc]);
-normilize([], _Data, Acc) ->
+    normalize(Rules, Data, [{K2, []}|Acc]);
+normalize([], _Data, Acc) ->
     Acc.
 
 is_required(required)       -> true;

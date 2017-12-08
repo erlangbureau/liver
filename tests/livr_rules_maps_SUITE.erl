@@ -35,16 +35,17 @@
 
     %% special rules
     email,
-%        url,
+    url,
     iso_date,
     equal_to_field,
-%
+
     %% meta rules
     nested_object,
+    variable_object,
     list_of,
     list_of_objects,
     list_of_different_objects,
-%        'or',
+    'or',
 
     %% modifiers (previously - "filter rules")
     trim,
@@ -159,6 +160,9 @@ number_between(Config) ->
 email(Config) ->
     ?RUN(Config).
 
+url(Config) ->
+    ?RUN(Config).
+
 iso_date(Config) ->
     ?RUN(Config).
 
@@ -168,6 +172,9 @@ equal_to_field(Config) ->
 nested_object(Config) ->
     ?RUN(Config).
 
+variable_object(Config) ->
+    ?RUN(Config).
+
 list_of(Config) ->
     ?RUN(Config).
 
@@ -175,6 +182,9 @@ list_of_objects(Config) ->
     ?RUN(Config).
 
 list_of_different_objects(Config) ->
+    ?RUN(Config).
+
+'or'(Config) ->
     ?RUN(Config).
 
 trim(Config) ->
@@ -299,8 +309,10 @@ case_to_path(not_empty_list, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/22-not_empty_list/"};
 case_to_path(not_empty_list, negative) ->
     {ok, ?LIVR_TEST_PATH ++ "/negative/22-not_empty_list/"};
-
-
+case_to_path(url, positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/23-url/"};
+case_to_path(url, negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/23-url/"};
 case_to_path(iso_date, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/24-iso_date/"};
 case_to_path(iso_date, negative) ->
@@ -317,8 +329,14 @@ case_to_path(any_object, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/27-any_object/"};
 case_to_path(any_object, negative) ->
     {ok, ?LIVR_TEST_PATH ++ "/negative/27-any_object/"};
-
-
+case_to_path(variable_object, positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/28-variable_object/"};
+case_to_path(variable_object, negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/28-variable_object/"};
+case_to_path('or', positive) ->
+    {ok, ?LIVR_TEST_PATH ++ "/positive/29-or/"};
+case_to_path('or', negative) ->
+    {ok, ?LIVR_TEST_PATH ++ "/negative/29-or/"};
 case_to_path(trim, positive) ->
     {ok, ?LIVR_TEST_PATH ++ "/positive/30-trim/"};
 case_to_path(to_lc, positive) ->

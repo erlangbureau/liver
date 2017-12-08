@@ -34,6 +34,7 @@
 
 %% meta rules
 -export([nested_object/3]).
+-export([variable_object/3]).
 -export([list_of/3]).
 -export([list_of_objects/3]).
 -export([list_of_different_objects/3]).
@@ -386,9 +387,23 @@ email(_Args, Value, _Opts) when is_binary(Value) ->
 email(_Args, _Value, _Opts) ->
     {error, format_error}.
 
-url(_Args, Value, _Opts) ->
-    %% TODO
-    {ok, Value}.
+url(_Args, <<>> = Value, _Opts) ->
+    {ok, Value};
+url(_Args, Value, _Opts) when is_binary(Value) ->
+    Value2 = unicode:characters_to_list(Value),
+    Host = case http_uri:parse(Value2) of
+        {ok, {http, _UserInfo, Host0, _Port, _Path, _Query}}    -> Host0;
+        {ok, {https, _UserInfo, Host0, _Port, _Path, _Query}}   -> Host0;
+        _ -> ""
+    end,
+    Pattern = "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])"
+        "(\\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$",
+    case re:run(Host, Pattern, [caseless, {capture, none}]) of
+        nomatch -> {error, wrong_url};
+        _       -> {ok, Value}
+    end;
+url(_Args, _Value, _Opts) ->
+    {error, format_error}.
 
 iso_date(_Args, <<>> = Value, _Opts) ->
     {ok, Value};
@@ -424,11 +439,17 @@ equal_to_field(_Args, _Value, _Opts) ->
     {error, format_error}.
 
 %% meta rules
-nested_object([List|_], Value, Opts)
-        when is_list(List); is_map(List) ->
+nested_object([List|_], Value, Opts) when is_list(List); is_map(List) ->
     nested_object(List, Value, Opts);
 nested_object(Args, Value, Opts) ->
     liver:validate(Args, Value, Opts).
+
+variable_object([List|_], Value, Opts) when is_list(List); is_map(List) ->
+    variable_object(List, Value, Opts);
+variable_object([Field, Schemas|_], Object, Opts) ->
+    Type = liver_maps:get(Field, Object, undefined),
+    Schema = liver_maps:get(Type, Schemas, undefined),
+    liver:validate(Schema, Object, Opts).
 
 list_of(_Args, <<>>, _Opts) ->
     {ok, <<>>};
@@ -480,13 +501,8 @@ list_of_different_objects(_Args, <<>>, _Opts) ->
     {ok, <<>>};
 list_of_different_objects([List|_], Value, Opts) when is_list(List) ->
     list_of_different_objects(List, Value, Opts);
-list_of_different_objects([Field, Schemas|_], Objects, Opts)
-        when is_list(Objects) ->
-    Results = [begin
-        Type = liver_maps:get(Field, Object, undefined),
-        Schema = liver_maps:get(Type, Schemas, undefined),
-        liver:validate(Schema, Object, Opts)
-    end || Object <- Objects],
+list_of_different_objects(Args, Objects, Opts) when is_list(Objects) ->
+    Results = [variable_object(Args, Object, Opts) || Object <- Objects],
     case lists:keymember(error, 1, Results) of
         false ->
             ListOfValues2 = [Val || {ok, Val} <- Results],
@@ -503,8 +519,17 @@ list_of_different_objects([Field, Schemas|_], Objects, Opts)
 list_of_different_objects(_Args, _Value, _Opts) ->
     {error, format_error}.
 
-'or'(_Args, Value, _Opts) ->
-    %% TODO
+'or'([Rule|Rules], Value, Opts) ->
+    case liver:validate(#{'$fake_key' => Rule}, #{'$fake_key' => Value}, Opts) of
+        {ok, #{'$fake_key' := Value2}} ->
+            {ok, Value2};
+        {error, #{'$fake_key' := Err}} ->
+            case Rules of
+                []  -> {error, Err};
+                _   -> 'or'(Rules, Value, Opts)
+            end
+    end;
+'or'([], Value, _Opts) ->
     {ok, Value}.
 
 %% modifiers (previously - "filter rules")
