@@ -367,6 +367,13 @@ number_between(_Args, _Value, _Opts) ->
     {error, format_error}.
 
 %% special rules
+%% TODO add support for emails like:
+%%  用户@例子.广告              (Chinese, Unicode)
+%%  अजय@डाटा.भारत                  (Hindi, Unicode)
+%%  квіточка@пошта.укр          (Ukrainian, Unicode)
+%%  θσερ@εχαμπλε.ψομ            (Greek, Unicode)
+%%  Dörte@Sörensen.example.com  (German, Unicode)
+%%  аджай@экзампл.рус           (Russian, Unicode)
 email(_Args, <<>> = Value, _Opts) ->
     {ok, Value};
 email(_Args, Value, _Opts) when is_binary(Value) ->

@@ -1,4 +1,4 @@
--module(livr_rules_SUITE).
+-module(livr_rules_maps_SUITE).
 
 -compile(export_all).
 
