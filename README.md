@@ -77,7 +77,7 @@ Simple example:
 
 More complex example:
 ```erl
-1> Schema = #{
+7> Schema = #{
     <<"address">> => [required, {nested_object, #{
         <<"country">> => [required,{one_of,[[<<"Ukraine">>,<<"USA">>]]}],
         <<"zip">> => positive_integer,
@@ -86,7 +86,7 @@ More complex example:
     }}]
 }.
 
-2> Input = #{
+8> Input = #{
     <<"address">> => #{
         <<"country">> => <<"Ukraine">>,
         <<"zip">> => <<"12345">>,
@@ -97,7 +97,7 @@ More complex example:
     <<"extra_field">> => <<"will be removed">>
 }.
 
-3> liver:validate(Schema, Input).
+9> liver:validate(Schema, Input).
 {ok,#{<<"address">> => #{<<"building">> => 10,
         <<"country">> => <<"Ukraine">>,
         <<"street">> => <<"10">>,
@@ -106,7 +106,7 @@ More complex example:
 
 Strict validation:
 ```erl
-4> liver:validate(Schema, Input, [{strict, true}]).
+10> liver:validate(Schema, Input, [{strict, true}]).
 {error,#{<<"address">> => #{<<"extra_field">> => <<"UNKNOWN_FIELD">>},
          <<"extra_field">> => <<"UNKNOWN_FIELD">>}}
 ```
