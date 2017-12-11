@@ -49,9 +49,6 @@ split_global(BinString, Pattern) ->
 
 split_global(BinString, Pattern, Acc) ->
     case binary:match(BinString, Pattern) of
-        {0, B} ->
-            <<_:B/binary, After/binary>> = BinString,
-            split_global(After, Pattern, Acc);
         {A,B} ->
             <<Before:A/binary, _:B/binary, After/binary>> = BinString,
             split_global(After, Pattern, [Before|Acc]);

@@ -10,11 +10,9 @@
 -export([get/2, get/3]).
 -export([reverse/1]).
 -export([keys/1]).
--export([is_key/2]).
 -export([is_empty/1]).
 -export([put/3]).
 -export([map/2]).
--export([fold/3]).
 
 
 %% API
@@ -36,11 +34,7 @@ get(Key, Map, Default) when is_map(Map) ->
 get(Key, List, Default) when is_list(List) ->
     case lists:keyfind(Key, 1, List) of
         {_, Value} -> Value;
-        _ ->
-            case lists:member(Key, List) of
-                true -> true;
-                false -> Default
-            end
+        _ -> Default
     end;
 get(_Key, _Map, Default) ->
     Default.
@@ -54,14 +48,6 @@ keys(Map) when is_map(Map) ->
     maps:keys(Map);
 keys(List) when is_list(List) ->
     [K || {K, _V} <- List].
-
-is_key(Key, Map) when is_map(Map) ->
-    maps:is_key(Key, Map);
-is_key(Key, List) when is_list(List) ->
-    case lists:keyfind(Key, 1, List) of
-        false -> lists:member(Key, List);
-        _True -> true
-    end.
 
 is_empty(Map) when is_map(Map) ->
     maps:size(Map) =:= 0;
@@ -82,16 +68,3 @@ map(Fun, Map) when is_map(Map) ->
     maps:map(Fun, Map);
 map(Fun, List) when is_list(List) ->
     [{K, Fun(K, V)}|| {K, V} <- List].
-
-fold(Fun, Init, Map) when is_map(Map) ->
-    maps:fold(Fun, Init, Map);
-fold(Fun, Init, List) when is_list(List) ->
-    foldl(Fun, Init, List).
-
-%% internal
-foldl(F, Acc, [{K, V}|Tail]) ->
-    foldl(F, F(K, V, Acc), Tail);
-foldl(F, Acc, [K|Tail]) ->
-    foldl(F, F(K, [], Acc), Tail);
-foldl(_F, Acc, []) ->
-    Acc.

@@ -14,6 +14,8 @@
 %% TODO
 %% See http://www.cs.tufts.edu/~nr/cs257/archive/florian-loitsch/printf.pdf
 %% See https://www.cs.indiana.edu/~dyb/pubs/FP-Printing-PLDI96.pdf
+to_binary(0.0) ->
+    <<"0.0">>;
 to_binary(Float) when is_float(Float) ->
     BinFloat = <<Float:64/float>>,                  %% to binary (double precision)
     <<Sign:1, Exp:11, Frac:52>> = BinFloat,         %% unpack

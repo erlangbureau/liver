@@ -2,20 +2,13 @@
 
 %% API
 -export([normalize/2]).
--export([apply/3]).
 -export([has_required/1]).
--export([apply_required/2]).
+-export([execute/2, execute/3]).
 
 %% API
 normalize(Rules, Data) ->
     Result = normalize(Rules, Data, []),
     lists:reverse(Result).
-
-apply(Rules, Value, Opts) ->
-    ApplyFun = fun(Rule, RuleArgs, Acc) ->
-        apply(Rule, RuleArgs, Acc, Opts)
-    end,
-    liver_maps:fold(ApplyFun, {ok, Value}, Rules).
 
 has_required([{R, _A}|Rules]) ->
     case is_required(R) of
@@ -25,13 +18,23 @@ has_required([{R, _A}|Rules]) ->
 has_required([]) ->
     false.
 
-apply_required(Rules, Opts) ->
+execute(Rules, Opts) ->
     Rules2 = [Rule || {R, _Args} = Rule <- Rules, is_required(R)],
-    ApplyFun = fun(Rule, RuleArgs, Acc) ->
-        apply(Rule, RuleArgs, Acc, Opts)
-    end,
-    liver_maps:fold(ApplyFun, {ok, undefined}, Rules2).
+    execute(Rules2, undefined, Opts).
 
+execute([{Rule, Args}|Rules], Value, Opts) ->
+    Module = liver:which(Rule),
+    try Module:Rule(Args, Value, Opts) of
+        {ok, Value2}    -> execute(Rules, Value2, Opts);
+        Error           -> Error
+    catch
+        error:undef ->
+            {error, {unimplemented_rule, Rule}};
+        _Type:_Reason ->
+            {error, format_error}
+    end;
+execute([], Value, _Opts) ->
+    {ok, Value}.
 
 %% internal
 normalize([{K, V} = Rule|Rules], Data, Acc) when is_atom(K) ->
@@ -65,10 +68,10 @@ normalize([Rules|Rules2], Data, Acc) when is_list(Rules) ->
     Acc2 = normalize(Rules, Data, Acc),
     normalize(Rules2, Data, Acc2);
 normalize([K|Rules], Data, Acc) when is_atom(K) ->
-    normalize(Rules, Data, [{K, []}|Acc]);
+    normalize([{K, []}|Rules], Data, Acc);
 normalize([K|Rules], Data, Acc) when is_binary(K) ->
     K2 = binary_to_atom(K, utf8),
-    normalize(Rules, Data, [{K2, []}|Acc]);
+    normalize([{K2, []}|Rules], Data, Acc);
 normalize([], _Data, Acc) ->
     Acc.
 
@@ -76,15 +79,3 @@ is_required(required)       -> true;
 is_required(not_empty_list) -> true;
 is_required(default)        -> true;
 is_required(_)              -> false.
-
-apply(Rule, Args, {ok, Value}, Opts) ->
-    Module = liver:which(Rule),
-    try Module:Rule(Args, Value, Opts)
-    catch
-        error:undef ->
-            {error, {unimplemented_rule, Rule}};
-        _Type:_Reason ->
-            {error, format_error}
-    end;
-apply(_Rule, _Args, {error, _} = Err, _Opts) ->
-    Err.

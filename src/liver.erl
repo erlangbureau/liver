@@ -43,7 +43,7 @@ validate([{K, intersection}|Keys], Schema, In, Out, Errors, Opts) ->
     Rules = liver_maps:get(K, Schema),
     Value = liver_maps:get(K, In),
     Rules2 = liver_rules:normalize(Rules, In),
-    case liver_rules:apply(Rules2, Value, Opts) of
+    case liver_rules:execute(Rules2, Value, Opts) of
         {ok, Value2} ->
             Out2 = liver_maps:put(K, Value2, Out),
             validate(Keys, Schema, In, Out2, Errors, Opts);
@@ -58,7 +58,7 @@ validate([{K, schema}|Keys], Schema, In, Out, Errors, Opts) ->
     Rules2 = liver_rules:normalize(Rules, In),
     case liver_rules:has_required(Rules2) of
         true ->
-            case liver_rules:apply_required(Rules2, Opts) of
+            case liver_rules:execute(Rules2, Opts) of
                 {ok, Value2} ->
                     Out2 = liver_maps:put(K, Value2, Out),
                     validate(Keys, Schema, In, Out2, Errors, Opts);
