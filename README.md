@@ -74,6 +74,7 @@ Simple example:
 6> liver:validate(Schema2, Input2).
 {error,[{<<"number1">>,<<"NOT_INTEGER">>}]}
 ```
+
 More complex example:
 ```erl
 1> Schema = #{
@@ -101,6 +102,10 @@ More complex example:
         <<"country">> => <<"Ukraine">>,
         <<"street">> => <<"10">>,
         <<"zip">> => 12345}}}
+```
+
+Strict validation:
+```erl
 4> liver:validate(Schema, Input, [{strict, true}]).
 {error,#{<<"address">> => #{<<"extra_field">> => <<"UNKNOWN_FIELD">>},
          <<"extra_field">> => <<"UNKNOWN_FIELD">>}}
