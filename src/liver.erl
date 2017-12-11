@@ -4,10 +4,11 @@
 -export([validate/2, validate/3]).
 -export([which/1]).
 -export([add_rule/2]).
+-export([custom_error/2]).
 
 -include("liver.hrl").
 
--define(IsMap(Data),
+-define(IsKV(Data),
     (is_map(Data) orelse is_list(Data))
 ).
 
@@ -16,7 +17,7 @@ validate(Schema, Data) ->
     validate(Schema, Data, #{}).
 
 validate(Schema, In, Opts)
-        when ?IsMap(Schema) andalso ?IsMap(In) andalso ?IsMap(Opts) ->
+        when ?IsKV(Schema) andalso ?IsKV(In) andalso ?IsKV(Opts) ->
     SchemaKeys  = liver_maps:keys(Schema),
     DataKeys    = liver_maps:keys(In),
     Keys        = sift(SchemaKeys, DataKeys, []),
@@ -25,8 +26,8 @@ validate(Schema, In, Opts)
     Errors      = liver_maps:new(ReturnType),
     validate(Keys, Schema, In, Out, Errors, Opts);
 validate(_Schema, _In, _Opts) ->
-    ErrorCode = custom_error_message(format_error),
-    {error, ErrorCode}.
+    ErrorMsg = custom_error_message(format_error),
+    {error, ErrorMsg}.
 
 which(Rule) ->
     AvailableRules = application:get_env(?MODULE, rules, ?DEFAULT_RULES),
@@ -34,8 +35,13 @@ which(Rule) ->
 
 add_rule(Rule, Module) when is_atom(Rule), is_atom(Module) ->
     OldRules = application:get_env(?MODULE, rules, ?DEFAULT_RULES),
-    NewRules2 = liver_maps:put(Rule, Module, OldRules),
-    application:set_env(?MODULE, rules, NewRules2).
+    NewRules = liver_maps:put(Rule, Module, OldRules),
+    application:set_env(?MODULE, rules, NewRules).
+
+custom_error(ErrCode, ErrMsg) when is_atom(ErrCode) ->
+    OldErrors = application:get_env(?MODULE, errors, ?DEFAULT_ERRORS),
+    NewErrors = liver_maps:put(ErrCode, ErrMsg, OldErrors),
+    application:set_env(?MODULE, errors, NewErrors).
 
 %% internal
 validate([{K, intersection}|Keys], Schema, In, Out, Errors, Opts) ->
@@ -78,7 +84,7 @@ validate([{K, data}|Keys], Schema, In, Out, Errors, Opts) ->
             validate(Keys, Schema, In, Out, Errors, Opts);
         true ->
             %% Strict validation enabled
-            ErrorCode = custom_error_message(unannounced),
+            ErrorCode = custom_error_message(unknown_field),
             Errors2 = liver_maps:put(K, ErrorCode, Errors),
             validate(Keys, Schema, In, Out, Errors2, Opts)
     end;
@@ -114,4 +120,5 @@ get_return_type(Opts, InData) ->
     end.
 
 custom_error_message(Code) ->
-    maps:get(Code, ?DEFAULT_LIVR_ERRORS, Code).
+    Errors = application:get_env(?MODULE, errors, ?DEFAULT_ERRORS),
+    maps:get(Code, Errors, Code).

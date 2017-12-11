@@ -1,6 +1,7 @@
 # Liver
 [![Build Status](https://travis-ci.org/erlangbureau/liver.svg?branch=master)](https://travis-ci.org/erlangbureau/liver)
 [![Coverage Status](https://coveralls.io/repos/github/erlangbureau/liver/badge.svg?branch=master)](https://coveralls.io/github/erlangbureau/liver?branch=master)
+
 ## DESCRIPTION
 [![Logo](https://www.halstedsurgery.org/Upload/200710291014_3602_000.jpg)]()
 
@@ -21,10 +22,10 @@ Liver is a lightweight Erlang validator based on LIVR Specification (See http://
 11. Unicode support
 
 **Liver specific features:**
-1. Returns errors on all fields that do not have validation rules (strict mode)
-2. Ability to return custom error codes
-3. Additional set of rules for most typical Erlang situations
-4. Support both maps and proplists as input data types
+1. Support different data types (maps, proplists)
+2. Strict Mode (returns errors on all fields that do not have validation rules)
+3. Ability to return custom error codes
+4. Additional set of strict rules (without implicit conversion of types)
 
 
 ## GETTING STARTED
@@ -71,34 +72,36 @@ Simple example:
 5> Input2 =  [{<<"number1">>,-1.12}].
 
 6> liver:validate(Schema2, Input2).
-{error, [{<<"number1">>,not_integer}]}
+{error,[{<<"number1">>,<<"NOT_INTEGER">>}]}
 ```
-More complex example
+More complex example:
 ```erl
+1> Schema = #{
+    <<"address">> => [required, {nested_object, #{
+        <<"country">> => [required,{one_of,[[<<"Ukraine">>,<<"USA">>]]}],
+        <<"zip">> => positive_integer,
+        <<"street">> => required,
+        <<"building">> => [required,positive_integer]
+    }}]
+}.
 
-1> Schema = [{<<"address">>,
-                [required,
-                 {nested_object,
-                   [{<<"country">>, [required, {one_of, [[<<"Ukraine">>, <<"USA">>]]}]},
-                    {<<"zip">>, positive_integer},
-                    {<<"street">>, required},
-                    {<<"building">>, [required, positive_integer]}]}]}].
-
-2> Input =  [{<<"address">>,
-                [{<<"country">>, <<"Ukraine">>},
-                 {<<"zip">>, <<"12345">>},
-                 {<<"street">>, <<"10">>},
-                 {<<"building">>, <<"10">>},
-                 {<<"extra_field">>, <<"will be removed">>}]},
-            {<<"extra_field">>, <<"will be removed">>}].
+2> Input = #{
+    <<"address">> => #{
+        <<"country">> => <<"Ukraine">>,
+        <<"zip">> => <<"12345">>,
+        <<"street">> => <<"10">>,
+        <<"building">> => <<"10">>,
+        <<"extra_field">> => <<"will be removed">>
+    },
+    <<"extra_field">> => <<"will be removed">>
+}.
 
 3> liver:validate(Schema, Input).
-{ok, [{<<"address">>,
-           [{<<"country">>, <<"Ukraine">>},
-            {<<"zip">>, 12345},
-            {<<"street">>, <<"10">>},
-            {<<"building">>, 10}]}]}
+{ok,#{<<"address">> => #{<<"building">> => 10,
+        <<"country">> => <<"Ukraine">>,
+        <<"street">> => <<"10">>,
+        <<"zip">> => 12345}}}
 4> liver:validate(Schema, Input, [{strict, true}]).
-{error,[{<<"extra_field">>,unannounced},
-        {<<"address">>,[{<<"extra_field">>,unannounced}]}]}
+{error,#{<<"address">> => #{<<"extra_field">> => <<"UNKNOWN_FIELD">>},
+         <<"extra_field">> => <<"UNKNOWN_FIELD">>}}
 ```

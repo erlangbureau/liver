@@ -47,7 +47,7 @@
     default                     => liver_livr_rules
 }).
 
--define(DEFAULT_LIVR_ERRORS, #{
+-define(DEFAULT_ERRORS, #{
     required                => <<"REQUIRED">>,
     format_error            => <<"FORMAT_ERROR">>,
     cannot_be_empty         => <<"CANNOT_BE_EMPTY">>,
@@ -65,5 +65,6 @@
     wrong_date              => <<"WRONG_DATE">>,
     wrong_email             => <<"WRONG_EMAIL">>,
     wrong_url               => <<"WRONG_URL">>,
-    fields_not_equal        => <<"FIELDS_NOT_EQUAL">>
+    fields_not_equal        => <<"FIELDS_NOT_EQUAL">>,
+    unknown_field           => <<"UNKNOWN_FIELD">>
 }).
