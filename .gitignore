@@ -4,7 +4,12 @@ deps
 *.beam
 *.plt
 erl_crash.dump
-ebin/*.beam
-rel/example_project
-.concrete/DEV_MODE
+ebin/
 .rebar
+.erlang.mk/
+.swp
+logs/
+liver.d
+src/*.swp
+src/sets/*.swp
+tests/*.swp
