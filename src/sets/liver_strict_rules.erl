@@ -6,8 +6,8 @@
 -export([is_integer/3, to_integer/3]).
 -export([is_boolean/3, to_boolean/3]).
 -export([is_list/3]).
--export([is_string/3]).
--export([is_bstring/3]).
+-export([is_string/3, to_string/3]).
+-export([is_bstring/3, to_bstring/3]).
 -export([is_atom/3]).
 
 %% API
@@ -102,6 +102,36 @@ to_boolean(_Args, null, _Opts) ->
     {ok, false};
 to_boolean(_Args, _, _Opts) ->
     {ok, true}.
+
+to_string(_Args, Value, _Opts) when is_binary(Value) ->
+    try unicode:characters_to_list(Value) of
+        Value2 -> {ok, Value2}
+    catch
+        _:_ -> {error, cant_be_string}
+    end;
+to_string(_Args, Value,_Opts) when is_atom(Value) ->
+    try atom_to_list(Value) of
+        Value2 -> {ok, Value2}
+    catch
+        _:_ -> {error, cant_be_string}
+    end;
+to_string(_Args, _Value, _Opts) ->
+    {error, cant_be_string}.
+
+to_bstring(_Args, Value, _Opts) when is_list(Value) ->
+    try unicode:characters_to_binary(Value) of
+        Value2 -> {ok, Value2}
+    catch
+        _:_ -> {error, cant_be_string}
+    end;
+to_bstring(_Args, Value, _Opts) when is_atom(Value) ->
+    try atom_to_binary(Value, utf8) of
+        Value2 -> {ok, Value2}
+    catch
+        _:_ -> {error, cant_be_string}
+    end;
+to_bstring(_Args, _Value, _Opts) ->
+    {error, cant_be_string}.
 
 %% internal
 is_char_list([C|Cs]) when
