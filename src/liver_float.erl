@@ -56,11 +56,11 @@ to_binary(Float) when is_float(Float) ->
     add_sign(Sign, Digits2).
 
 %% internal
-int_ceil(X) ->
-    T = trunc(X),
-    case (X - T) of
-        Pos when Pos > 0 -> T + 1;
-        _ -> T
+int_ceil(Float) ->
+    Int = trunc(Float),
+    case (Float - Int) > 0 of
+        true -> Int + 1;
+        false -> Int
     end.
 
 to_printable_digits(Exp, Frac, Est) ->
