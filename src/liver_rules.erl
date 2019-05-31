@@ -60,6 +60,11 @@ normalize(K, Data, Acc) when is_atom(K) ->
 normalize(Rule, Data, Acc) when is_binary(Rule) ->
     K2 = binary_to_atom(Rule, utf8),
     normalize([{K2, []}], Data, Acc);
+normalize({K, V}, Data, Acc) when is_atom(K) ->
+    normalize([{K, V}], Data, Acc);
+normalize({K, V}, Data, Acc) when is_binary(K) ->
+    K2 = binary_to_atom(K, utf8),
+    normalize([{K2, V}], Data, Acc);
 normalize([Rule|Rules], Data, Acc) when is_map(Rule) ->
     Rules2 = maps:to_list(Rule),
     Acc2 = normalize(Rules2, Data, Acc),
