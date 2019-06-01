@@ -1,0 +1,8 @@
+{application, liver, [
+	{description, "Lightweight Erlang validator based on LIVR specification"},
+	{vsn, "0.9.3"},
+	{modules, []},
+	{registered, []},
+	{applications, [kernel,stdlib]},
+	{env, []}
+]}.
