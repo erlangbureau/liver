@@ -72,12 +72,12 @@ not_empty(_Args, Value, _Opts) ->
 
 not_empty_list(_Args, Value, _Opts) ->
     case Value of
-        <<>>        -> {error, cannot_be_empty};
-        [{}]        -> {error, format_error};
-        []          -> {error, cannot_be_empty};
-        [_|_]       -> {ok, Value};
-        undefined   -> {error, cannot_be_empty};
-        _           -> {error, format_error}
+        <<>>                -> {error, cannot_be_empty};
+        [{}]                -> {error, format_error};
+        []                  -> {error, cannot_be_empty};
+        [_|_]               -> {ok, Value};
+        ?MISSED_FIELD_VALUE -> {error, cannot_be_empty};
+        _                   -> {error, format_error}
     end.
 
 any_object(_Args, Value, _Opts) ->
