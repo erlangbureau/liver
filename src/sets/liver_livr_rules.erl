@@ -378,8 +378,9 @@ number_between(_Args, _Value, _Opts) ->
 email(_Args, <<>> = Value, _Opts) ->
     {ok, Value};
 email(_Args, Value, _Opts) when is_binary(Value) ->
-    Pattern = "^((?:(?:[^\"@\\.\s]+\\.?)|(?:\\.\"[^\"\s]+\"\\.))*"
-        "(?:(?:\\.?\"[^\"\s]+\")|(?:[a-zA-Z0-9\\-_]+)))@[a-z0-9\\.\\-\\[\\]]+$",
+    Pattern = "^(([^<>()\\[\\]\\\\.,;:\s@\"]+(\\.[^<>()\\[\\]\\.,;:\s@\"]+)*)"
+        "|(\".+\"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\])"
+        "|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$",
     case re:run(Value, Pattern, [caseless, anchored]) of
         nomatch -> {error, wrong_email};
         _       -> {ok, Value}
