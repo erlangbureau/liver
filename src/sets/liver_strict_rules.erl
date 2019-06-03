@@ -59,6 +59,10 @@ is_not_undefined(_Args, undefined, _Opts) ->
 is_not_undefined(_Args, Value, _Opts) ->
     {ok, Value}.
 
+is_integer([positive], Value, _Opts) when is_integer(Value), Value > 0 ->
+    {ok, Value};
+is_integer([negative], Value, _Opts) when is_integer(Value), Value < 0 ->
+    {ok, Value};
 is_integer(_Args, Value, _Opts) when is_integer(Value) ->
     {ok, Value};
 is_integer(_Args, _Value, _Opts) ->
