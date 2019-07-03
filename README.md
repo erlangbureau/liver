@@ -43,7 +43,7 @@ Liver is a lightweight Erlang validator based on LIVR Specification (See http://
   ```erl
 {deps, [
     {liver, ".*",
-        {git, "https://github.com/erlangbureau/liver.git", {branch, 0.9.0}}
+        {git, "https://github.com/erlangbureau/liver.git", {branch, "0.9.0"}}
     }
 ]}.
 ```
