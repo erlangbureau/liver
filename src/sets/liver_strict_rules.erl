@@ -23,6 +23,18 @@
 %% list rules
 -export([is_list/3]).
 
+%% proplist rules
+-export([is_proplist/3]).
+
+%% map rules
+-export([is_map/3]).
+
+%% nested elements
+-export([nested_map/3]).
+-export([nested_list/3]).
+-export([nested_proplist/3]).
+
+
 -include("liver_rules.hrl").
 
 
@@ -38,6 +50,8 @@ default(Default, ?MISSED_FIELD_VALUE, _Opts) ->
     {ok, Default};
 default(_Default, Value, _Opts) ->
     {ok, Value}.
+
+
 
 is_null(_Args, Value = null, _Opts) ->
     {ok, Value};
@@ -199,6 +213,31 @@ to_atom(_Args, Value, _Opts) when is_list(Value) ->
     catch
         _:_ -> {error, cant_be_atom}
     end.
+
+is_proplist(_Args, Value, _Opts) when is_list(Value) ->
+    Value2 = [Tuple || {_, _} = Tuple <- Value],
+    case Value =:= Value2 of
+        true ->
+            {ok, Value};
+        false ->
+            {error, not_proplist}
+    end;
+is_proplist(_Args, _Value, _Opts) ->
+    {error, not_proplist}.
+
+is_map(_Args, Value, _Opts) when is_map(Value) ->
+    {ok, Value};
+is_map(_Args, _Value, _Opts) ->
+    {error, not_map}.
+
+nested_map(Args, Value, Opts) when is_map(Args), is_map(Value) ->
+    liver:validate_map(Args, Value, Opts).
+
+nested_proplist(Args, Value, Opts) when is_list(Args), is_list(Value) ->
+    liver:validate_map(Args, Value, Opts).
+
+nested_list(Args, Value, Opts) when is_list(Args), is_list(Value) ->
+    liver:validate_list(Args, Value, Opts).
 
 %% internal
 is_char_list([C|Cs]) when

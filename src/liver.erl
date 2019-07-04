@@ -20,14 +20,12 @@ validate(Schema, Data) ->
     validate(Schema, Data, #{}).
 
 validate(Schema, Data, Opts) ->
-    SchemaType = detect_data_type(Schema),
-    DataType = detect_data_type(Data),
-    case {SchemaType, DataType} of
-        {map, map} ->
+    case detect_datatype_by_schema(Schema) of
+        jsobject ->
             validate_map(Schema, Data, Opts);
-        {_, list} ->
+        list ->
             validate_list(Schema, Data, Opts);
-        {_, _} ->
+        _ ->
             validate_term(Schema, Data, Opts)
     end.
 
@@ -82,19 +80,8 @@ custom_error(ErrCode, ErrMsg) when is_atom(ErrCode) ->
     NewErrors = liver_maps:put(ErrCode, ErrMsg, OldErrors),
     application:set_env(?MODULE, errors, NewErrors).
 
-%% internal
-detect_data_type(Data) when is_map(Data) ->
-    map;
-detect_data_type(Data) when is_list(Data) ->
-    case [V || {_, _} = V <- Data] == Data of
-        true ->
-            map;
-        false ->
-            list
-    end;
-detect_data_type(_Data) ->
-    term.
 
+%% internal
 validate([{K, intersection}|Keys], Schema, In, Out, Errors, Opts) ->
     %% Key from Schema exists in Data
     Rules = liver_maps:get(K, Schema),
@@ -173,3 +160,20 @@ get_return_type(Opts, InData) ->
 custom_error_message(Code) ->
     Errors = application:get_env(?MODULE, errors, ?DEFAULT_ERRORS),
     maps:get(Code, Errors, Code).
+
+detect_datatype_by_schema(Schema) when is_map(Schema) ->
+    jsobject;
+detect_datatype_by_schema(Schema) when is_list(Schema) ->
+    Schema2 = liver_rules:normalize(Schema, []),
+    Schema3 = [T || {K, _} = T <- Schema2, is_valid_rule(K)],
+    case Schema2 =:= Schema3 of
+        true ->
+            list;
+        false ->
+            jsobject
+    end;
+detect_datatype_by_schema(_Schema) ->
+    term.
+
+is_valid_rule(Rule) ->
+    which(Rule) /= undefined_module.
