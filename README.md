@@ -30,10 +30,12 @@ Liver is a lightweight Erlang validator based on LIVR Specification (See http://
 11. Unicode support
 
 **This implementation specific features:**
-1. Support different data types (maps, proplists)
-2. Strict Mode (returns errors on all fields that do not have validation rules)
-3. Ability to return custom error codes
-4. Additional set of strict rules (without implicit conversion of types)
+1. Strict Mode (returns errors on all fields that do not have validation rules)
+2. Support on-the-fly conversion from proplist to map and vice versa
+3. Support list as root element, what is missing in the original specification
+4. Support on-the-fly conversion keys from string to atom
+5. Ability to return custom error codes
+6. Additional set of strict rules (without implicit conversion of types)
 
 
 
