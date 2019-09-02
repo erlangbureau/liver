@@ -84,6 +84,14 @@ is_integer(_Args, _Value, _Opts) ->
 
 is_boolean(_Args, Value, _Opts) when is_boolean(Value) ->
     {ok, Value};
+is_boolean(_Args, <<"true">> = Value, _Opts) ->
+    {ok, Value};
+is_boolean(_Args, <<"false">> = Value, _Opts) ->
+    {ok, Value};
+is_boolean(_Args, <<"1">> = Value, _Opts) ->
+    {ok, Value};
+is_boolean(_Args, <<"0">> = Value, _Opts) ->
+    {ok, Value};
 is_boolean(_Args, _Value, _Opts) ->
     {error, not_boolean}.
 
