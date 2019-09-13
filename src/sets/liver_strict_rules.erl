@@ -255,7 +255,7 @@ is_char_binary(<<C/utf8, Cs/binary>>) when
         is_integer(C), C > 16#DFFF, C < 16#FFFE;
         is_integer(C), C > 16#FFFF, C =< 16#10FFFF ->
     is_char_binary(Cs);
-is_char_binary([]) ->
+is_char_binary(<<>>) ->
     true;
 is_char_binary(_) ->
     false.
