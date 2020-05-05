@@ -384,7 +384,7 @@ email(_Args, <<>> = Value, _Opts) ->
 email(_Args, Value, _Opts) when is_binary(Value) ->
     Pattern = "^(([^<>()\\[\\]\\\\.,;:\s@\"]+(\\.[^<>()\\[\\]\\.,;:\s@\"]+)*)"
         "|(\".+\"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\])"
-        "|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$",
+        "|(([а-яА-Яa-zA-Z\\-0-9]+\\.)+[а-яА-Яa-zA-Z]{2,}))$",
     case re:run(Value, Pattern, [caseless, anchored]) of
         nomatch -> {error, wrong_email};
         _       -> {ok, Value}
@@ -401,8 +401,8 @@ url(_Args, Value, _Opts) when is_binary(Value) ->
         {ok, {https, _UserInfo, Host0, _Port, _Path, _Query}}   -> Host0;
         _ -> ""
     end,
-    Pattern = "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])"
-        "(\\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$",
+    Pattern = "^([а-яА-Яa-zA-Z0-9]|[а-яА-Яa-zA-Z0-9][а-яА-Яa-zA-Z0-9\-]{0,61}[а-яА-Яa-zA-Z0-9])"
+        "(\\.([а-яА-Яa-zA-Z0-9]|[а-яА-Яa-zA-Z0-9][а-яА-Яa-zA-Z0-9\-]{0,61}[а-яА-Яa-zA-Z0-9]))*$",
     case re:run(Host, Pattern, [caseless, {capture, none}]) of
         nomatch -> {error, wrong_url};
         _       -> {ok, Value}
