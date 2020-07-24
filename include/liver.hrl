@@ -9,6 +9,7 @@
     string                      => liver_livr_rules,
     eq                          => liver_livr_rules,
     one_of                      => liver_livr_rules,
+    subset                      => liver_livr_rules,
     max_length                  => liver_livr_rules,
     min_length                  => liver_livr_rules,
     length_between              => liver_livr_rules,

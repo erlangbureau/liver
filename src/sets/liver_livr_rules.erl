@@ -11,6 +11,7 @@
 -export([string/3]).
 -export([eq/3]).
 -export([one_of/3]).
+-export([subset/3]).
 -export([max_length/3]).
 -export([min_length/3]).
 -export([length_between/3]).
@@ -146,6 +147,23 @@ one_of([], _Value, _Opts) ->
     {error, not_allowed_value};
 one_of(Equivalent, Value, Opts) ->
     eq(Equivalent, Value, Opts).
+
+subset(List, Value, Opts) when is_list(Value) ->
+    subset(List, Value, Opts, []);
+subset(List, Value, Opts) ->
+    subset(List, [Value], Opts, []).
+
+subset(List, [Head|Tail], Opts, Acc) ->
+    case one_of(List, Head, Opts) of
+        {ok, Value} ->
+            subset(List, Tail, Opts, [Value|Acc]);
+        {error, not_allowed_value} ->
+            {error, not_allowed_value}
+    end;
+subset(_List, [], _Opts, [Acc|[]]) ->
+    {ok, Acc};
+subset(_List, [], _Opts, Acc) ->
+    {ok, lists:reverse(Acc)}.
 
 max_length([MaxLength|_], Value, Opts) ->
     max_length(MaxLength, Value, Opts);
