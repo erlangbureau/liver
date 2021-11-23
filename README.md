@@ -68,7 +68,7 @@ dep_liver = git https://github.com/erlangbureau/liver.git 0.9.0
 
 ## <a name='usage-examples'></a>Usage Examples
 
-Simple validation example:
+Example of simple validation for object (map or proplist):
 ```erl
 1> Schema1 = [{<<"first_name">>,[{length_between,[4,6]}]}].
 
@@ -85,7 +85,18 @@ Simple validation example:
 {error,[{<<"number1">>,<<"NOT_INTEGER">>}]}
 ```
 
-More complex validation example:
+Example of simple validation for list:
+```erl
+1> Schema = [{nested_object, #{pool_name => [required, is_atom]}}].
+
+2> liver:validate(Schema, [[{pool_name, test1}], [{pool_name, test2}]], #{return => map}).
+{ok,[#{pool_name => test1},#{pool_name => test2}]}
+
+3> liver:validate(Schema, [[{pool_name, test1}], [{pool_nam, test2}]], #{return => map}).
+{error,[null,#{pool_name => <<"REQUIRED">>}]}
+```
+
+Example of more complex validation for object (map or proplist):
 ```erl
 7> Schema = #{
     <<"address">> => [required, {nested_object, #{
@@ -114,7 +125,7 @@ More complex validation example:
         <<"zip">> => 12345}}}
 ```
 
-Strict validation example:
+Example of strict validation (fields that are not specified in the scheme are forbidden):
 ```erl
 10> liver:validate(Schema, Input, [{strict, true}]).
 {error,#{<<"address">> => #{<<"extra_field">> => <<"UNKNOWN_FIELD">>},
@@ -144,7 +155,7 @@ Parameter Opts is a proplist or map that specifies return type and validation st
 
 If set to `as_is` the type of `Output` wiil be the same as type of `Input`. If set to `map` the `Output` will be map. If set to `proplist` the `Output` will be proplist. Defaults to `as_is`
 
-`{strict, boolean()}` 
+`{strict, boolean()}`
 
 If set to `false` deletes from `Input` all fields that not defined in `Schema`. Or if set to `true` and `Input` has fields that not defined in `Schema` returns error. Defaults to `false`
 
