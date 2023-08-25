@@ -4,6 +4,10 @@ otp_release:
    - 19.3
    - 20.3
    - 21.3
-   - 22.1
+   - 22.3
+   - 23.3
+   - 24.3
+   - 25.3
+   - 26.0
 after_success:
   - make coverage-report
