@@ -2,12 +2,20 @@
 [![Build Status](https://travis-ci.org/erlangbureau/liver.svg?branch=master)](https://travis-ci.org/erlangbureau/liver)
 [![Coverage Status](https://coveralls.io/repos/github/erlangbureau/liver/badge.svg?branch=master)](https://coveralls.io/github/erlangbureau/liver?branch=master)
 
-## DESCRIPTION
-[![Logo](https://www.halstedsurgery.org/Upload/200710291014_3602_000.jpg)]()
+## Summary
+[![Logo](https://upload.wikimedia.org/wikipedia/commons/d/d4/Liver.svg)]()
 
 Liver is a lightweight Erlang validator based on LIVR Specification (See http://livr-spec.org for details)
 
-**Basic LIVR features:**
+## Table of Contents
+* [Description](#description)
+* [Geting Started](#geting-started)
+* [Usage Examples](#usage-examples)
+* [Exports](#exports)
+* [License](#license)
+
+## <a name='description'></a>Description
+**LIVR specification features:**
 
 1. Rules are declarative and language independent
 2. Any number of rules for each field
@@ -21,20 +29,23 @@ Liver is a lightweight Erlang validator based on LIVR Specification (See http://
 10. Multipurpose (user input validation, configs validation, contracts programming etc)
 11. Unicode support
 
-**Liver specific features:**
-1. Support different data types (maps, proplists)
-2. Strict Mode (returns errors on all fields that do not have validation rules)
-3. Ability to return custom error codes
-4. Additional set of strict rules (without implicit conversion of types)
+**This implementation specific features:**
+1. Strict Mode (returns errors on all fields that do not have validation rules)
+2. Support on-the-fly conversion from proplist to map and vice versa
+3. Support list as root element, what is missing in the original specification
+4. Support on-the-fly conversion keys from string to atom
+5. Ability to return custom error codes
+6. Additional set of strict rules (without implicit conversion of types)
 
 
-## GETTING STARTED
+
+## <a name='geting-started'></a>Geting Started
 1. Add as a dependency in your project:
   * For **rebar** add to rebar.config
   ```erl
 {deps, [
     {liver, ".*",
-        {git, "https://github.com/erlangbureau/liver.git", {branch, master}}
+        {git, "https://github.com/erlangbureau/liver.git", {branch, "0.9.0"}}
     }
 ]}.
 ```
@@ -42,7 +53,7 @@ Liver is a lightweight Erlang validator based on LIVR Specification (See http://
   * For **erlang.mk** add to make file:
 ```erl
 DEPS = liver
-dep_liver = git https://github.com/erlangbureau/liver.git master
+dep_liver = git https://github.com/erlangbureau/liver.git 0.9.0
 ```
 
 2. Add liver in **your_project.app.src** file in tuple **applications**:
@@ -55,10 +66,9 @@ dep_liver = git https://github.com/erlangbureau/liver.git master
 ```
 3. Thats all, now you can validate data, register your own rules or add aliases for built-in rules.
 
-## USAGE
-### Examples of data validation
+## <a name='usage-examples'></a>Usage Examples
 
-Simple example:
+Example of simple validation for object (map or proplist):
 ```erl
 1> Schema1 = [{<<"first_name">>,[{length_between,[4,6]}]}].
 
@@ -74,9 +84,21 @@ Simple example:
 6> liver:validate(Schema2, Input2).
 {error,[{<<"number1">>,<<"NOT_INTEGER">>}]}
 ```
-More complex example:
+
+Example of simple validation for list:
 ```erl
-1> Schema = #{
+1> Schema = [{nested_object, #{pool_name => [required, is_atom]}}].
+
+2> liver:validate(Schema, [[{pool_name, test1}], [{pool_name, test2}]], #{return => map}).
+{ok,[#{pool_name => test1},#{pool_name => test2}]}
+
+3> liver:validate(Schema, [[{pool_name, test1}], [{pool_nam, test2}]], #{return => map}).
+{error,[null,#{pool_name => <<"REQUIRED">>}]}
+```
+
+Example of more complex validation for object (map or proplist):
+```erl
+7> Schema = #{
     <<"address">> => [required, {nested_object, #{
         <<"country">> => [required,{one_of,[[<<"Ukraine">>,<<"USA">>]]}],
         <<"zip">> => positive_integer,
@@ -85,7 +107,7 @@ More complex example:
     }}]
 }.
 
-2> Input = #{
+8> Input = #{
     <<"address">> => #{
         <<"country">> => <<"Ukraine">>,
         <<"zip">> => <<"12345">>,
@@ -96,12 +118,47 @@ More complex example:
     <<"extra_field">> => <<"will be removed">>
 }.
 
-3> liver:validate(Schema, Input).
+9> liver:validate(Schema, Input).
 {ok,#{<<"address">> => #{<<"building">> => 10,
         <<"country">> => <<"Ukraine">>,
         <<"street">> => <<"10">>,
         <<"zip">> => 12345}}}
-4> liver:validate(Schema, Input, [{strict, true}]).
+```
+
+Example of strict validation (fields that are not specified in the scheme are forbidden):
+```erl
+10> liver:validate(Schema, Input, [{strict, true}]).
 {error,#{<<"address">> => #{<<"extra_field">> => <<"UNKNOWN_FIELD">>},
          <<"extra_field">> => <<"UNKNOWN_FIELD">>}}
 ```
+## <a name='exports'></a>Exports
+
+### `validate/2`
+
+```erlang
+validate(Schema, Input) -> {ok, Output} | {error, ErrorList}
+
+  Schema, Input, Output, ErrorList = proplist() | map()
+```
+  Equivalent to `validate(Schema, Input, []).`
+
+### `validate/3`
+
+```erlang
+validate(Schema, Input, Opts) -> {ok, Output} | {error, ErrorList}
+
+  Schema, Input, Output, ErrorList, Opts = proplist() | map()
+```
+Parameter Opts is a proplist or map that specifies return type and validation strictness. Default values are used for omitted options. This means that not specifying any options `([])` is the same as specifying `[{return, as_is}, {strict, false}]`.
+
+`{return, ReturnType}`
+
+If set to `as_is` the type of `Output` wiil be the same as type of `Input`. If set to `map` the `Output` will be map. If set to `proplist` the `Output` will be proplist. Defaults to `as_is`
+
+`{strict, boolean()}`
+
+If set to `false` deletes from `Input` all fields that not defined in `Schema`. Or if set to `true` and `Input` has fields that not defined in `Schema` returns error. Defaults to `false`
+
+## <a name='license'></a>License
+
+Liver is released under the MIT License

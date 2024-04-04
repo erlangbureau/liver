@@ -1,3 +1,34 @@
+%% @copyright 2007 Mochi Media, Inc.
+%% @author Bob Ippolito <bob@mochimedia.com>
+%% @reworked_by Serhii Kostiushkin <s.kostyushkin@gmail.com>
+%% see original version at https://github.com/basho/mochiweb/blob/master/src/mochinum.erl
+
+%% Permission is hereby granted, free of charge, to any person obtaining a
+%% copy of this software and associated documentation files (the "Software"),
+%% to deal in the Software without restriction, including without limitation
+%% the rights to use, copy, modify, merge, publish, distribute, sublicense,
+%% and/or sell copies of the Software, and to permit persons to whom the
+%% Software is furnished to do so, subject to the following conditions:
+%%
+%% The above copyright notice and this permission notice shall be included in
+%% all copies or substantial portions of the Software.
+%%
+%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+%% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+%% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+%% THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+%% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+%% FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+%% DEALINGS IN THE SOFTWARE.
+
+%% @doc Useful numeric algorithms for floats that cover some deficiencies
+%% in the math module. More interesting is digits/1, which implements
+%% the algorithm from:
+%% http://www.cs.indiana.edu/~burger/fp/index.html
+%% See also "Printing Floating-Point Numbers Quickly and Accurately"
+%% in Proceedings of the SIGPLAN '96 Conference on Programming Language
+%% Design and Implementation.
+
 -module(liver_float).
 
 %% API
@@ -25,11 +56,11 @@ to_binary(Float) when is_float(Float) ->
     add_sign(Sign, Digits2).
 
 %% internal
-int_ceil(X) ->
-    T = trunc(X),
-    case (X - T) of
-        Pos when Pos > 0 -> T + 1;
-        _ -> T
+int_ceil(Float) ->
+    Int = trunc(Float),
+    case (Float - Int) > 0 of
+        true -> Int + 1;
+        false -> Int
     end.
 
 to_printable_digits(Exp, Frac, Est) ->

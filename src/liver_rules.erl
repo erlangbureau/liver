@@ -5,6 +5,8 @@
 -export([has_required/1]).
 -export([execute/2, execute/3]).
 
+-include("liver_rules.hrl").
+
 %% API
 normalize(Rules, Data) ->
     Result = normalize(Rules, Data, []),
@@ -20,7 +22,7 @@ has_required([]) ->
 
 execute(Rules, Opts) ->
     Rules2 = [Rule || {R, _Args} = Rule <- Rules, is_required(R)],
-    execute(Rules2, undefined, Opts).
+    execute(Rules2, ?MISSED_FIELD_VALUE, Opts).
 
 execute([{Rule, Args}|Rules], Value, Opts) ->
     Module = liver:which(Rule),

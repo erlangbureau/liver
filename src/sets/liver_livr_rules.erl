@@ -48,6 +48,8 @@
 -export([leave_only/3]).
 -export([default/3]).
 
+-include("liver_rules.hrl").
+
 
 %% API
 %% common rules
@@ -56,6 +58,8 @@ required(_Args, <<>>, _Opts) ->
 required(_Args, null, _Opts) ->
     {error, required};
 required(_Args, undefined, _Opts) ->
+    {error, required};
+required(_Args, ?MISSED_FIELD_VALUE, _Opts) ->
     {error, required};
 required(_Args, Value, _Opts) ->
     {ok, Value}.
@@ -68,12 +72,12 @@ not_empty(_Args, Value, _Opts) ->
 
 not_empty_list(_Args, Value, _Opts) ->
     case Value of
-        <<>>        -> {error, cannot_be_empty};
-        [{}]        -> {error, format_error};
-        []          -> {error, cannot_be_empty};
-        [_|_]       -> {ok, Value};
-        undefined   -> {error, cannot_be_empty};
-        _           -> {error, format_error}
+        <<>>                -> {error, cannot_be_empty};
+        [{}]                -> {error, format_error};
+        []                  -> {error, cannot_be_empty};
+        [_|_]               -> {ok, Value};
+        ?MISSED_FIELD_VALUE -> {error, cannot_be_empty};
+        _                   -> {error, format_error}
     end.
 
 any_object(_Args, Value, _Opts) ->
@@ -443,36 +447,21 @@ equal_to_field(_Args, _Value, _Opts) ->
 nested_object([List|_], Value, Opts) when is_list(List); is_map(List) ->
     nested_object(List, Value, Opts);
 nested_object(Args, Value, Opts) ->
-    liver:validate(Args, Value, Opts).
+    liver:validate_map(Args, Value, Opts).
 
 variable_object([List|_], Value, Opts) when is_list(List); is_map(List) ->
     variable_object(List, Value, Opts);
 variable_object([Field, Schemas|_], Object, Opts) ->
     Type = liver_maps:get(Field, Object, undefined),
     Schema = liver_maps:get(Type, Schemas, undefined),
-    liver:validate(Schema, Object, Opts).
+    liver:validate_map(Schema, Object, Opts).
 
 list_of(_Args, <<>>, _Opts) ->
     {ok, <<>>};
-list_of([List|_], Value, Opts) when is_list(List); is_map(List) ->
-    list_of(List, Value, Opts);
+list_of([Rules|_], Value, Opts) when is_list(Rules); is_map(Rules) ->
+    list_of(Rules, Value, Opts);
 list_of(Rules, ListOfValues, Opts) when is_list(ListOfValues) ->
-    Results = [begin
-        liver:validate(#{'$fake_key' => Rules}, #{'$fake_key' => Value}, Opts)
-    end || Value <- ListOfValues],
-    case lists:keymember(error, 1, Results) of
-        false ->
-            ListOfValues2 = [Val || {ok, #{'$fake_key' := Val}} <- Results],
-            {ok, ListOfValues2};
-        true ->
-            ListOfErrors = [begin
-                case Result of
-                    {ok, _} -> null;
-                    {error, #{'$fake_key' := Err}} -> Err
-                end
-            end || Result <- Results],
-            {error, ListOfErrors}
-    end;
+    liver:validate_list(Rules, ListOfValues, Opts);
 list_of(_Args, _Value, _Opts) ->
     {error, format_error}.
 
@@ -481,7 +470,7 @@ list_of_objects(_Args, <<>>, _Opts) ->
 list_of_objects([List|_], Value, Opts) when is_list(List); is_map(List) ->
     list_of_objects(List, Value, Opts);
 list_of_objects(Schema, Objects, Opts) when is_list(Objects) ->
-    Results = [liver:validate(Schema, Object, Opts) || Object <- Objects],
+    Results = [liver:validate_map(Schema, Object, Opts) || Object <- Objects],
     case lists:keymember(error, 1, Results) of
         false ->
             ListOfValues2 = [Val || {ok, Val} <- Results],
@@ -521,12 +510,12 @@ list_of_different_objects(_Args, _Value, _Opts) ->
     {error, format_error}.
 
 'or'([Rule|Rules], Value, Opts) ->
-    case liver:validate(#{'$fake_key' => Rule}, #{'$fake_key' => Value}, Opts) of
-        {ok, #{'$fake_key' := Value2}} ->
-            {ok, Value2};
-        {error, #{'$fake_key' := Err}} ->
+    case liver:validate_term(Rule, Value, Opts) of
+        {ok, _} = Ok ->
+            Ok;
+        {error, _} = Err ->
             case Rules of
-                []  -> {error, Err};
+                []  -> Err;
                 _   -> 'or'(Rules, Value, Opts)
             end
     end;
@@ -586,6 +575,8 @@ default(Default, <<>>, _Opts) ->
 default(Default, undefined, _Opts) ->
     {ok, Default};
 default(Default, null, _Opts) ->
+    {ok, Default};
+default(Default, ?MISSED_FIELD_VALUE, _Opts) ->
     {ok, Default};
 default(_Default, Value, _Opts) ->
     {ok, Value}.

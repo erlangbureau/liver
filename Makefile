@@ -1,6 +1,6 @@
 PROJECT = liver
 PROJECT_DESCRIPTION = Lightweight Erlang validator based on LIVR specification
-PROJECT_VERSION = 0.9.3
+PROJECT_VERSION = 0.9.4
 
 TEST_DEPS = LIVR jsx iso8601
 
