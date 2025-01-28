@@ -18,6 +18,5 @@ concurrency:
 jobs:
   build:
     name: Liver
-    needs: cleanup-master
     if: ${{ !cancelled() }}
     uses: ninenines/ci.erlang.mk/.github/workflows/ci.yaml@master
