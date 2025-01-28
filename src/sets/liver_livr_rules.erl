@@ -396,10 +396,18 @@ url(_Args, <<>> = Value, _Opts) ->
     {ok, Value};
 url(_Args, Value, _Opts) when is_binary(Value) ->
     Value2 = unicode:characters_to_list(Value),
-    Host = case http_uri:parse(Value2) of
-        {ok, {http, _UserInfo, Host0, _Port, _Path, _Query}}    -> Host0;
-        {ok, {https, _UserInfo, Host0, _Port, _Path, _Query}}   -> Host0;
-        _ -> ""
+    X = uri_string:parse(Value2),
+    Host = case X of
+        #{scheme := Scheme, host := Host0} ->
+            Scheme1 = string:lowercase(Scheme),
+            if
+                Scheme1 == "http"; Scheme1 == "https" ->
+                    Host0;
+                true ->
+                    ""
+            end;
+        _ ->
+            ""
     end,
     Pattern = "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])"
         "(\\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$",
