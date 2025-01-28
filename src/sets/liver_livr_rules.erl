@@ -454,6 +454,8 @@ equal_to_field(_Args, _Value, _Opts) ->
 %% meta rules
 nested_object([List|_], Value, Opts) when is_list(List); is_map(List) ->
     nested_object(List, Value, Opts);
+nested_object(_Args, <<>>, _Opts) ->
+    {ok, <<>>};
 nested_object(Args, Value, Opts) ->
     liver:validate_map(Args, Value, Opts).
 
