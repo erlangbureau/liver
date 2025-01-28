@@ -1,5 +1,5 @@
 # Liver
-[![Build Status](https://travis-ci.org/erlangbureau/liver.svg?branch=master)](https://travis-ci.org/erlangbureau/liver)
+[![Build Status](https://github.com/erlangbureau/liver/actions/workflows/ci.yml/badge.svg)](https://github.com/erlangbureau/liver/actions)
 [![Coverage Status](https://coveralls.io/repos/github/erlangbureau/liver/badge.svg?branch=master)](https://coveralls.io/github/erlangbureau/liver?branch=master)
 
 ## Summary

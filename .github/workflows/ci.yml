@@ -1,4 +1,4 @@
-name: Build and Test Erlang Application
+name: Liver build
 
 on:
   push:
