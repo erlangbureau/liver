@@ -11,28 +11,13 @@ on:
     ## Every Monday at 2am.
     - cron: 0 2 * * 1
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-and-test:
-    runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        erlang-version: [17.5, 18.3, 19.3, 20.3, 21.3, 22.3, 23.3, 24.3, 25.3]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Erlang/OTP
-        uses: erlef/setup-beam@v1
-        with:
-          otp-version: ${{ matrix.erlang-version }}
-
-      - name: Build Project
-        run: make
-
-      - name: Run Tests
-        run: make tests
-
-      - name: Coveralls
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: rebar3 as test coveralls send
+  build:
+    name: Liver
+    needs: cleanup-master
+    if: ${{ !cancelled() }}
+    uses: ninenines/ci.erlang.mk/.github/workflows/ci.yaml@master
