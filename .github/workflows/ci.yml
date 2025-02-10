@@ -19,4 +19,4 @@ jobs:
   build:
     name: Liver
     if: ${{ !cancelled() }}
-    uses: ninenines/ci.erlang.mk/.github/workflows/ci.yaml@master
+    uses: erlangbureau/ci.erlang.mk/.github/workflows/ci.yaml@master
