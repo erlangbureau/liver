@@ -6,8 +6,8 @@ BUILD_DEPS = ci.erlang.mk
 dep_ci.erlang.mk = git https://github.com/ninenines/ci.erlang.mk master
 DEP_EARLY_PLUGINS = ci.erlang.mk
 
-AUTO_CI_OTP ?= OTP-LATEST-24+
-AUTO_CI_WINDOWS ?= OTP-LATEST-24+
+AUTO_CI_OTP ?= OTP-LATEST-21+
+AUTO_CI_WINDOWS ?= OTP-LATEST-21+
 
 TEST_DEPS = LIVR jsx iso8601
 TEST_DIR = tests
