@@ -12,6 +12,8 @@ TEST_DEPS = LIVR jsx iso8601
 TEST_DIR = tests
 COVER=1
 
+DIALYZER_OPTS += -I include
+
 dep_ci.erlang.mk    = git https://github.com/ninenines/ci.erlang.mk         master
 dep_jsx             = git https://github.com/talentdeficit/jsx.git          v2.8.3
 dep_LIVR            = git https://github.com/koorchik/LIVR                  master
