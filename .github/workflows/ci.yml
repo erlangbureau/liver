@@ -20,3 +20,26 @@ jobs:
     name: Liver
     if: ${{ !cancelled() }}
     uses: ninenines/ci.erlang.mk/.github/workflows/ci.yaml@master
+
+  coverage:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' || github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Erlang/OTP
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: 27.2.2
+
+      - name: Install dependencies
+        run: make
+
+      - name: Run tests with coverage
+        run: make tests
+
+      - name: Upload coverage to Coveralls
+        run: make coveralls-send
