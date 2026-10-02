@@ -81,9 +81,17 @@ List entries may be `erlang_standard`, `livr_spec`, a name from
 
 | Rule | Behaviour |
 |------|-----------|
-| `email` | Binary/list; Unicode local-part and IDN domains allowed |
-| `url` | `http` / `https` via `uri_string:parse/1` (Unicode host ok) |
+| `email` | Binary/list. Internationalized addresses (RFC 6531 subset): Unicode local-part and IDN domains (Cyrillic, CJK, Indic with combining marks, Greek, …). |
+| `url` | `http` / `https` only. ASCII and punycode hosts via `uri_string:parse/1`; raw Unicode IDN hosts via a unicode-aware fallback (OTP rejects them in `uri_string`). |
 | `iso_date` | `<<"YYYY-MM-DD">>` or `{Y,M,D}` → `{Y,M,D}` |
+
+Examples:
+
+```erlang
+liver:validate(#{e => email}, #{e => <<"квіточка@пошта.укр"/utf8>>}).
+liver:validate(#{u => url}, #{u => <<"https://пошта.укр"/utf8>>}).
+liver:validate(#{e => email}, #{e => <<"用户@例子.广告"/utf8>>}).
+```
 
 ## Nested
 

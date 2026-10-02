@@ -81,6 +81,9 @@ is_integer([negative], Value, _Opts) when is_integer(Value), Value < 0 ->
     {ok, Value};
 is_integer([non_neg], Value, _Opts) when is_integer(Value), Value >= 0 ->
     {ok, Value};
+is_integer([Kind], _Value, _Opts)
+  when Kind =:= positive; Kind =:= negative; Kind =:= non_neg ->
+    {error, not_integer};
 is_integer(_Args, Value, _Opts) when is_integer(Value) ->
     {ok, Value};
 is_integer(_Args, _Value, _Opts) ->
@@ -487,13 +490,12 @@ to_proplist(_Args, _Value, _Opts) ->
 %% special: email / url / iso_date
 %%--------------------------------------------------------------------
 
-%% Accepts Unicode (incl. Cyrillic) local-parts and IDN domains.
+%% Internationalized email (RFC 6531 / SMTPUTF8 subset):
+%% Unicode local-part and IDN domain labels (Cyrillic, CJK, Indic, …).
 email(_Args, Value, _Opts) when is_binary(Value) ->
-    case re:run(Value,
-                <<"^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"/utf8>>,
-                [anchored, unicode, ucp, {capture, none}]) of
-        match -> {ok, Value};
-        nomatch -> {error, wrong_email}
+    case is_intl_email(Value) of
+        true -> {ok, Value};
+        false -> {error, wrong_email}
     end;
 email(_Args, Value, Opts) when is_list(Value) ->
     case unicode:characters_to_binary(Value) of
@@ -503,23 +505,13 @@ email(_Args, Value, Opts) when is_list(Value) ->
 email(_Args, _Value, _Opts) ->
     {error, format_error}.
 
+%% http/https URLs with ASCII, punycode (xn--), or Unicode IDN hosts.
+%% OTP uri_string:parse/1 rejects raw Unicode hosts, so those use a
+%% unicode-aware fallback parser.
 url(_Args, Value, _Opts) when is_binary(Value) ->
-    case unicode:characters_to_list(Value) of
-        List when is_list(List) ->
-            case uri_string:parse(List) of
-                #{scheme := Scheme, host := Host} when Host =/= "" ->
-                    Scheme1 = string:lowercase(Scheme),
-                    if
-                        Scheme1 =:= "http"; Scheme1 =:= "https" ->
-                            {ok, Value};
-                        true ->
-                            {error, wrong_url}
-                    end;
-                _ ->
-                    {error, wrong_url}
-            end;
-        _ ->
-            {error, wrong_url}
+    case is_intl_http_url(Value) of
+        true -> {ok, Value};
+        false -> {error, wrong_url}
     end;
 url(_Args, Value, Opts) when is_list(Value) ->
     case unicode:characters_to_binary(Value) of
@@ -600,3 +592,91 @@ is_char_binary(<<>>) ->
     true;
 is_char_binary(_) ->
     false.
+
+%%--------------------------------------------------------------------
+%% internationalized email / URL helpers
+%%--------------------------------------------------------------------
+
+is_intl_email(Bin) when is_binary(Bin), Bin =/= <<>> ->
+    case binary:split(Bin, <<"@">>, [global]) of
+        [Local, Domain] when Local =/= <<>>, Domain =/= <<>> ->
+            is_intl_local_part(Local)
+                andalso is_intl_hostname(Domain)
+                andalso binary:match(Domain, <<".">>) =/= nomatch;
+        _ ->
+            false
+    end;
+is_intl_email(_) ->
+    false.
+
+%% Local-part: non-empty, no whitespace / controls / '@' (SMTPUTF8-friendly).
+is_intl_local_part(Local) ->
+    re:run(Local, <<"^[^\\s@\\p{C}]+$"/utf8>>,
+           [anchored, unicode, ucp, {capture, none}]) =:= match.
+
+is_intl_http_url(Bin) when is_binary(Bin), Bin =/= <<>> ->
+    case unicode:characters_to_list(Bin) of
+        List when is_list(List) ->
+            case uri_string:parse(List) of
+                #{scheme := Scheme, host := Host} when Host =/= "" ->
+                    is_http_scheme(Scheme);
+                {error, invalid_uri, _} ->
+                    %% Raw Unicode IDN hosts are rejected by uri_string.
+                    is_intl_http_url_unicode(Bin);
+                _ ->
+                    false
+            end;
+        _ ->
+            false
+    end;
+is_intl_http_url(_) ->
+    false.
+
+is_http_scheme(Scheme) ->
+    case string:lowercase(Scheme) of
+        S when S =:= "http"; S =:= "https"; S =:= <<"http">>; S =:= <<"https">> ->
+            true;
+        _ ->
+            false
+    end.
+
+%% https://[userinfo@]host[:port][/path][?query][#fragment]
+is_intl_http_url_unicode(Bin) ->
+    case re:run(Bin,
+                <<"^(https?):\\/\\/"
+                  "(?:([^\\/@?#]*)@)?"
+                  "([^\\/?#:]+)"
+                  "(?::([0-9]{1,5}))?"
+                  "([^?#]*)"
+                  "(?:\\?([^#]*))?"
+                  "(?:#(.*))?$"/utf8>>,
+                [anchored, unicode, ucp, {capture, all_but_first, binary}]) of
+        {match, [Scheme, _UserInfo, Host | _Rest]} ->
+            is_http_scheme(Scheme) andalso is_intl_hostname(Host);
+        nomatch ->
+            false
+    end.
+
+%% Host labels: Unicode letters/marks/digits (IDN) or LDH / punycode (xn--).
+%% \p{M} is required for Indic and other scripts with combining marks.
+is_intl_hostname(Host) when is_binary(Host), Host =/= <<>> ->
+    case re:run(Host, <<"^[\\p{L}\\p{M}\\p{N}._-]+$"/utf8>>,
+                [anchored, unicode, ucp, {capture, none}]) of
+        match ->
+            Labels = binary:split(Host, <<".">>, [global]),
+            Labels =/= [] andalso lists:all(fun is_intl_dns_label/1, Labels);
+        nomatch ->
+            false
+    end;
+is_intl_hostname(_) ->
+    false.
+
+is_intl_dns_label(<<>>) ->
+    false;
+is_intl_dns_label(Label) ->
+    %% Non-empty label; no leading/trailing hyphen (IDNA / LDH practice).
+    case re:run(Label, <<"^(?!-)[\\p{L}\\p{M}\\p{N}_-]+(?<!-)$"/utf8>>,
+                [anchored, unicode, ucp, {capture, none}]) of
+        match -> true;
+        nomatch -> false
+    end.
