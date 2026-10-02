@@ -45,6 +45,27 @@
 %% TODO
 %% See http://www.cs.tufts.edu/~nr/cs257/archive/florian-loitsch/printf.pdf
 %% See https://www.cs.indiana.edu/~dyb/pubs/FP-Printing-PLDI96.pdf
+
+%% To understand why the implementation for Erlang/OTP27 and above is different, see here:
+%% https://erlangforums.com/t/in-erlang-otp-27-0-0-will-no-longer-be-exactly-equal-to-0-0/2586
+%% and here: https://github.com/erlang/otp/issues/7168
+
+-if(?OTP_RELEASE >= 27).
+
+to_binary(+0.0) ->
+    <<"0.0">>;
+to_binary(-0.0) ->
+    <<"0.0">>;
+to_binary(Float) when is_float(Float) ->
+    BinFloat = <<Float:64/float>>,                  %% to binary (double precision)
+    <<Sign:1, Exp:11, Frac:52>> = BinFloat,         %% unpack
+    Est = int_ceil(math:log10(abs(Float)) - 1.0e-10),
+    {PointPlace, Digits} = to_printable_digits(Exp, Frac, Est),
+    Digits2 = apply_decimal_part(PointPlace, Digits),
+    add_sign(Sign, Digits2).
+
+-else.
+
 to_binary(0.0) ->
     <<"0.0">>;
 to_binary(Float) when is_float(Float) ->
@@ -54,6 +75,8 @@ to_binary(Float) when is_float(Float) ->
     {PointPlace, Digits} = to_printable_digits(Exp, Frac, Est),
     Digits2 = apply_decimal_part(PointPlace, Digits),
     add_sign(Sign, Digits2).
+
+-endif.
 
 %% internal
 int_ceil(Float) ->

@@ -4,8 +4,9 @@ deps
 *.beam
 *.plt
 erl_crash.dump
-ebin/*.beam
+ebin/
 .rebar
+_build/
 .erlang.mk/
 .swp
 logs/
@@ -13,3 +14,6 @@ liver.d
 src/*.swp
 src/sets/*.swp
 tests/*.swp
+cover/
+.tmp/
+tests/ct.cover.spec

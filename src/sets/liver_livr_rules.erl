@@ -50,7 +50,6 @@
 
 -include("liver_rules.hrl").
 
-
 %% API
 %% common rules
 required(_Args, <<>>, _Opts) ->
@@ -392,6 +391,9 @@ email(_Args, Value, _Opts) when is_binary(Value) ->
 email(_Args, _Value, _Opts) ->
     {error, format_error}.
 
+
+-if(?OTP_RELEASE >= 24).
+
 url(_Args, <<>> = Value, _Opts) ->
     {ok, Value};
 url(_Args, Value, _Opts) when is_binary(Value) ->
@@ -417,6 +419,28 @@ url(_Args, Value, _Opts) when is_binary(Value) ->
     end;
 url(_Args, _Value, _Opts) ->
     {error, format_error}.
+
+-else.
+
+url(_Args, <<>> = Value, _Opts) ->
+    {ok, Value};
+url(_Args, Value, _Opts) when is_binary(Value) ->
+    Value2 = unicode:characters_to_list(Value),
+    Host = case http_uri:parse(Value2) of
+        {ok, {http, _UserInfo, Host0, _Port, _Path, _Query}}    -> Host0;
+        {ok, {https, _UserInfo, Host0, _Port, _Path, _Query}}   -> Host0;
+        _ -> ""
+    end,
+    Pattern = "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])"
+        "(\\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$",
+    case re:run(Host, Pattern, [caseless, {capture, none}]) of
+        nomatch -> {error, wrong_url};
+        _       -> {ok, Value}
+    end;
+url(_Args, _Value, _Opts) ->
+    {error, format_error}.
+
+-endif.
 
 iso_date(_Args, <<>> = Value, _Opts) ->
     {ok, Value};
