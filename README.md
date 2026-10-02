@@ -13,6 +13,7 @@ schemas when you opt in.
 |------|--|
 | [Standard rules](doc/standard_rules.md) | Default rule reference |
 | [LIVR vs standard](doc/livr_vs_standard.md) | How to choose a rule set |
+| [Changelog](CHANGELOG.md) | Releases and breaking changes |
 
 ## Table of Contents
 * [Description](#description)
@@ -46,26 +47,30 @@ schemas when you opt in.
 
 ## Getting Started
 
-1. Add as a dependency:
+1. Add as a dependency (pin a release tag):
 
   * **rebar** — `rebar.config`:
   ```erl
 {deps, [
-    {liver, ".*",
-        {git, "https://github.com/erlangbureau/liver.git", {branch, "master"}}
-    }
+    {liver, {git, "https://github.com/erlangbureau/liver.git", {tag, "1.0.0"}}}
 ]}.
 ```
 
   * **erlang.mk**:
 ```erl
 DEPS = liver
-dep_liver = git https://github.com/erlangbureau/liver.git master
+dep_liver = git https://github.com/erlangbureau/liver.git 1.0.0
 ```
 
 2. Add `liver` to `applications` in your `.app.src`.
 
 3. Validate data, or register your own rules with `liver:add_rule/2`.
+
+> **Upgrading from 0.9.x:** since the first version (2017-11-21) Liver was
+> LIVR-compatible and stayed pre-1.0 until an Erlang-native default was ready.
+> That default is now `erlang_standard`. LIVR schemas need
+> `#{rule_set => livr_spec}` (or `livr_compatible => true`).
+> Details: [CHANGELOG.md](CHANGELOG.md#100---2026-10-03).
 
 ## Usage Examples
 
