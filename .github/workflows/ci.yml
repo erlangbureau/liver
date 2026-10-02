@@ -27,19 +27,23 @@ jobs:
     if: github.ref == 'refs/heads/master' || github.event_name == 'pull_request'
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: Set up Erlang/OTP
-        uses: erlef/setup-beam@v1
-        with:
-          otp-version: 27.2.2
+    - name: Set up Erlang/OTP
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: '27'
+        version-type: strict
 
-      - name: Install dependencies
-        run: make
+    - name: Install dependencies
+      run: make
 
-      - name: Run tests with coverage
-        run: make tests
+    - name: Run tests with coverage
+      run: make tests
 
-      - name: Upload coverage to Coveralls
-        run: make coveralls-send
+    - name: Upload coverage to Coveralls
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: make coveralls-send
