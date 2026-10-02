@@ -1,0 +1,43 @@
+suite erlang_standard
+forms maps proplists
+suites positive negative
+
+# cases
+positive/is_integer
+positive/is_string
+positive/is_utf8_binary
+positive/is_atom
+positive/is_float
+positive/is_number
+positive/is_non_neg_integer
+positive/is_pos_integer
+positive/to_integer
+positive/to_float
+positive/to_utf8_binary
+positive/to_existing_atom
+positive/to_map
+positive/to_proplist
+positive/one_of_terms
+positive/range
+positive/byte_size
+positive/length
+positive/is_tuple
+positive/email_ascii
+positive/email_unicode
+positive/iso_date_binary
+positive/iso_date_tuple
+positive/nested_map
+positive/rule_set_livr_spec
+positive/rule_set_compose
+positive/rule_set_mixed_alias
+negative/is_integer
+negative/is_string
+negative/is_non_neg_integer
+negative/to_existing_atom
+negative/one_of_terms
+negative/range
+negative/email
+negative/iso_date
+negative/nested_map
+negative/livr_name_unavailable
+negative/is_integer_under_livr_spec

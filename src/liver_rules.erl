@@ -25,7 +25,7 @@ execute(Rules, Opts) ->
     execute(Rules2, ?MISSED_FIELD_VALUE, Opts).
 
 execute([{Rule, Args}|Rules], Value, Opts) ->
-    Module = liver:which(Rule),
+    Module = liver:which(Rule, Opts),
     try Module:Rule(Args, Value, Opts) of
         {ok, Value2}    -> execute(Rules, Value2, Opts);
         Error           -> Error

@@ -1,11 +1,76 @@
--define(DEFAULT_RULES, #{
-    %% LIVR common rules
+%% Default rule set for application code: Erlang-oriented, no silent coercion.
+-define(ERLANG_STANDARD_RULES, #{
+    %% presence / nullability
+    required                    => liver_standard_rules,
+    default                     => liver_standard_rules,
+    is_null                     => liver_standard_rules,
+    is_not_null                 => liver_standard_rules,
+    is_undefined                => liver_standard_rules,
+    is_not_undefined            => liver_standard_rules,
+
+    %% type predicates
+    is_integer                  => liver_standard_rules,
+    is_non_neg_integer          => liver_standard_rules,
+    is_pos_integer              => liver_standard_rules,
+    is_float                    => liver_standard_rules,
+    is_number                   => liver_standard_rules,
+    is_boolean                  => liver_standard_rules,
+    is_atom                     => liver_standard_rules,
+    is_list                     => liver_standard_rules,
+    is_string                   => liver_standard_rules,
+    is_utf8_binary              => liver_standard_rules,
+    is_binary                   => liver_standard_rules,
+    is_map                      => liver_standard_rules,
+    is_proplist                 => liver_standard_rules,
+    is_tuple                    => liver_standard_rules,
+    is_pid                      => liver_standard_rules,
+    is_ref                      => liver_standard_rules,
+    is_port                     => liver_standard_rules,
+    is_fun                      => liver_standard_rules,
+    is_term                     => liver_standard_rules,
+
+    %% constraints
+    one_of_terms                => liver_standard_rules,
+    member                      => liver_standard_rules,
+    range                       => liver_standard_rules,
+    byte_size                   => liver_standard_rules,
+    bit_size                    => liver_standard_rules,
+    tuple_size                  => liver_standard_rules,
+    map_size                    => liver_standard_rules,
+    length                      => liver_standard_rules,
+
+    %% converters
+    to_integer                  => liver_standard_rules,
+    to_float                    => liver_standard_rules,
+    to_boolean                  => liver_standard_rules,
+    to_string                   => liver_standard_rules,
+    to_utf8_binary              => liver_standard_rules,
+    to_binary                   => liver_standard_rules,
+    to_atom                     => liver_standard_rules,
+    to_existing_atom            => liver_standard_rules,
+    to_list                     => liver_standard_rules,
+    to_map                      => liver_standard_rules,
+    to_proplist                 => liver_standard_rules,
+
+    %% special (Erlang-friendly)
+    email                       => liver_standard_rules,
+    url                         => liver_standard_rules,
+    iso_date                    => liver_standard_rules,
+
+    %% nested
+    nested_map                  => liver_standard_rules,
+    nested_list                 => liver_standard_rules,
+    nested_proplist             => liver_standard_rules
+}).
+
+%% LIVR specification rule names. Enabled via #{rule_set => livr_spec}.
+%% Mutually exclusive with erlang_standard unless mixed mode is used.
+-define(LIVR_SPEC_RULES, #{
     required                    => liver_livr_rules,
     not_empty                   => liver_livr_rules,
     not_empty_list              => liver_livr_rules,
     any_object                  => liver_livr_rules,
 
-    %% LIVR string rules
     string                      => liver_livr_rules,
     eq                          => liver_livr_rules,
     one_of                      => liver_livr_rules,
@@ -15,7 +80,6 @@
     length_equal                => liver_livr_rules,
     like                        => liver_livr_rules,
 
-    %% LIVR numeric rules
     integer                     => liver_livr_rules,
     positive_integer            => liver_livr_rules,
     decimal                     => liver_livr_rules,
@@ -24,13 +88,11 @@
     min_number                  => liver_livr_rules,
     number_between              => liver_livr_rules,
 
-    %% LIVR special rules
     email                       => liver_livr_rules,
     url                         => liver_livr_rules,
     iso_date                    => liver_livr_rules,
     equal_to_field              => liver_livr_rules,
 
-    %% LIVR meta rules
     nested_object               => liver_livr_rules,
     variable_object             => liver_livr_rules,
     list_of                     => liver_livr_rules,
@@ -38,31 +100,21 @@
     list_of_different_objects   => liver_livr_rules,
     'or'                        => liver_livr_rules,
 
-    %% LIVR modifiers (previously - "filter rules")
     trim                        => liver_livr_rules,
     to_lc                       => liver_livr_rules,
     to_uc                       => liver_livr_rules,
     remove                      => liver_livr_rules,
     leave_only                  => liver_livr_rules,
-    default                     => liver_livr_rules,
-
-    %% liver strict rules
-    is_null                     => liver_strict_rules,
-    is_undefined                => liver_strict_rules,
-    is_integer                  => liver_strict_rules,
-    is_boolean                  => liver_strict_rules,
-    is_list                     => liver_strict_rules,
-    is_string                   => liver_strict_rules,
-    is_bstring                  => liver_strict_rules,
-    is_atom                     => liver_strict_rules,
-    to_integer                  => liver_strict_rules,
-    to_boolean                  => liver_strict_rules
+    default                     => liver_livr_rules
 }).
+
+-define(DEFAULT_RULES, ?ERLANG_STANDARD_RULES).
 
 -define(DEFAULT_ERRORS, #{
     required                => <<"REQUIRED">>,
     format_error            => <<"FORMAT_ERROR">>,
     cannot_be_empty         => <<"CANNOT_BE_EMPTY">>,
+    not_empty               => <<"NOT_EMPTY">>,
     too_long                => <<"TOO_LONG">>,
     too_short               => <<"TOO_SHORT">>,
     too_high                => <<"TOO_HIGH">>,
@@ -70,6 +122,40 @@
     not_allowed_value       => <<"NOT_ALLOWED_VALUE">>,
     not_number              => <<"NOT_NUMBER">>,
     not_integer             => <<"NOT_INTEGER">>,
+    not_non_neg_integer     => <<"NOT_NON_NEG_INTEGER">>,
+    not_pos_integer         => <<"NOT_POSITIVE_INTEGER">>,
+    not_float               => <<"NOT_FLOAT">>,
+    not_boolean             => <<"NOT_BOOLEAN">>,
+    not_atom                => <<"NOT_ATOM">>,
+    not_list                => <<"NOT_LIST">>,
+    not_string              => <<"NOT_STRING">>,
+    not_utf8_binary         => <<"NOT_UTF8_BINARY">>,
+    not_binary              => <<"NOT_BINARY">>,
+    not_map                 => <<"NOT_MAP">>,
+    not_proplist            => <<"NOT_PROPLIST">>,
+    not_tuple               => <<"NOT_TUPLE">>,
+    not_pid                 => <<"NOT_PID">>,
+    not_ref                 => <<"NOT_REFERENCE">>,
+    not_port                => <<"NOT_PORT">>,
+    not_fun                 => <<"NOT_FUN">>,
+    not_null                => <<"NOT_NULL">>,
+    cannot_be_null          => <<"CANNOT_BE_NULL">>,
+    not_undefined           => <<"NOT_UNDEFINED">>,
+    cannot_be_undefined     => <<"CANNOT_BE_UNDEFINED">>,
+    not_member              => <<"NOT_MEMBER">>,
+    wrong_byte_size         => <<"WRONG_BYTE_SIZE">>,
+    wrong_bit_size          => <<"WRONG_BIT_SIZE">>,
+    wrong_tuple_size        => <<"WRONG_TUPLE_SIZE">>,
+    wrong_map_size          => <<"WRONG_MAP_SIZE">>,
+    wrong_length            => <<"WRONG_LENGTH">>,
+    cant_be_integer         => <<"CANNOT_BE_INTEGER">>,
+    cant_be_float           => <<"CANNOT_BE_FLOAT">>,
+    cant_be_string          => <<"CANNOT_BE_STRING">>,
+    cant_be_binary          => <<"CANNOT_BE_BINARY">>,
+    cant_be_atom            => <<"CANNOT_BE_ATOM">>,
+    cant_be_list            => <<"CANNOT_BE_LIST">>,
+    cant_be_map             => <<"CANNOT_BE_MAP">>,
+    cant_be_proplist        => <<"CANNOT_BE_PROPLIST">>,
     not_positive_integer    => <<"NOT_POSITIVE_INTEGER">>,
     not_decimal             => <<"NOT_DECIMAL">>,
     not_positive_decimal    => <<"NOT_POSITIVE_DECIMAL">>,

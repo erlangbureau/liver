@@ -1,9 +1,9 @@
--module(livr_rules_SUITE).
+-module(erlang_standard_SUITE).
 
 -compile(export_all).
 
 -include_lib("common_test/include/ct.hrl").
--include("cases/livr/cases.hrl").
+-include("cases/erlang_standard/cases.hrl").
 
 all() ->
     [
@@ -15,14 +15,15 @@ all() ->
 
 groups() ->
     [
-        {maps_positive, [parallel], ?LIVR_POSITIVE_CASES},
-        {maps_negative, [parallel], ?LIVR_NEGATIVE_CASES},
-        {proplists_positive, [parallel], ?LIVR_POSITIVE_CASES},
-        {proplists_negative, [parallel], ?LIVR_NEGATIVE_CASES}
+        {maps_positive, [parallel], ?ERLANG_STANDARD_POSITIVE_CASES},
+        {maps_negative, [parallel], ?ERLANG_STANDARD_NEGATIVE_CASES},
+        {proplists_positive, [parallel], ?ERLANG_STANDARD_POSITIVE_CASES},
+        {proplists_negative, [parallel], ?ERLANG_STANDARD_NEGATIVE_CASES}
     ].
 
 init_per_suite(Config) ->
-    [{cases_suite, livr}, {validate_opts, #{rule_set => livr_spec}} | Config].
+    [{cases_suite, erlang_standard},
+     {validate_opts, #{rule_set => erlang_standard}} | Config].
 
 end_per_suite(Config) ->
     Config.
@@ -40,4 +41,4 @@ end_per_group(_Name, Config) ->
     Config2 = lists:keydelete(init_type, 1, Config),
     lists:keydelete(data_form, 1, Config2).
 
--include("cases/livr/runners.hrl").
+-include("cases/erlang_standard/runners.hrl").

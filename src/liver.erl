@@ -5,8 +5,9 @@
 -export([validate_map/3]).
 -export([validate_list/3]).
 -export([validate_term/3]).
--export([which/1]).
+-export([which/1, which/2]).
 -export([add_rule/2]).
+-export([add_rule_set/2]).
 -export([custom_error/2]).
 
 -include("liver.hrl").
@@ -20,17 +21,19 @@ validate(Schema, Data) ->
     validate(Schema, Data, #{}).
 
 validate(Schema, Data, Opts) ->
-    case detect_datatype_by_schema(Schema) of
+    Opts2 = normalize_opts(Opts),
+    case detect_datatype_by_schema(Schema, Opts2) of
         jsobject ->
-            validate_map(Schema, Data, Opts);
+            validate_map(Schema, Data, Opts2);
         list ->
-            validate_list(Schema, Data, Opts);
+            validate_list(Schema, Data, Opts2);
         _ ->
-            validate_term(Schema, Data, Opts)
+            validate_term(Schema, Data, Opts2)
     end.
 
-validate_map(Schema, In, Opts)
-        when ?IsKV(Schema) andalso ?IsKV(In) andalso ?IsKV(Opts) ->
+validate_map(Schema, In, Opts0)
+        when ?IsKV(Schema) andalso ?IsKV(In) andalso ?IsKV(Opts0) ->
+    Opts = normalize_opts(Opts0),
     SchemaKeys  = liver_maps:keys(Schema),
     DataKeys    = liver_maps:keys(In),
     Keys        = sift(SchemaKeys, DataKeys, []),
@@ -42,7 +45,8 @@ validate_map(_Schema, _In, _Opts) ->
     ErrorMsg = custom_error_message(format_error),
     {error, ErrorMsg}.
 
-validate_list(Schema, Data, Opts) when is_list(Data) andalso ?IsKV(Opts) ->
+validate_list(Schema, Data, Opts0) when is_list(Data) andalso ?IsKV(Opts0) ->
+    Opts = normalize_opts(Opts0),
     Results = [validate_term(Schema, Value, Opts) || Value <- Data],
     case lists:keymember(error, 1, Results) of
         false ->
@@ -58,7 +62,8 @@ validate_list(Schema, Data, Opts) when is_list(Data) andalso ?IsKV(Opts) ->
             {error, ListOfErrors}
     end.
 
-validate_term(Schema, Data, Opts) when ?IsKV(Opts) ->
+validate_term(Schema, Data, Opts0) when ?IsKV(Opts0) ->
+    Opts = normalize_opts(Opts0),
     case validate_map(#{'$fake_key' => Schema}, #{'$fake_key' => Data}, Opts) of
         {ok, #{'$fake_key' := Val}} ->
             {ok, Val};
@@ -67,13 +72,22 @@ validate_term(Schema, Data, Opts) when ?IsKV(Opts) ->
     end.
 
 which(Rule) ->
-    AvailableRules = application:get_env(?MODULE, rules, ?DEFAULT_RULES),
-    maps:get(Rule, AvailableRules, undefined_module).
+    which(Rule, #{}).
+
+which(Rule, Opts) when is_map(Opts); is_list(Opts) ->
+    maps:get(Rule, rules_map(normalize_opts(Opts)), undefined_module).
 
 add_rule(Rule, Module) when is_atom(Rule), is_atom(Module) ->
     OldRules = application:get_env(?MODULE, rules, ?DEFAULT_RULES),
     NewRules = liver_maps:put(Rule, Module, OldRules),
     application:set_env(?MODULE, rules, NewRules).
+
+%% Register a named rule map for use in rule_set lists, e.g.
+%%   liver:add_rule_set(my_app, #{my_rule => my_mod}),
+%%   liver:validate(Schema, Data, #{rule_set => [my_app, erlang_standard]}).
+add_rule_set(Name, Rules) when is_atom(Name), is_map(Rules) ->
+    Sets = application:get_env(?MODULE, rule_sets, #{}),
+    application:set_env(?MODULE, rule_sets, maps:put(Name, Rules, Sets)).
 
 custom_error(ErrCode, ErrMsg) when is_atom(ErrCode) ->
     OldErrors = application:get_env(?MODULE, errors, ?DEFAULT_ERRORS),
@@ -161,19 +175,80 @@ custom_error_message(Code) ->
     Errors = application:get_env(?MODULE, errors, ?DEFAULT_ERRORS),
     maps:get(Code, Errors, Code).
 
-detect_datatype_by_schema(Schema) when is_map(Schema) ->
+detect_datatype_by_schema(Schema, _Opts) when is_map(Schema) ->
     jsobject;
-detect_datatype_by_schema(Schema) when is_list(Schema) ->
+detect_datatype_by_schema(Schema, Opts) when is_list(Schema) ->
     Schema2 = liver_rules:normalize(Schema, []),
-    Schema3 = [T || {K, _} = T <- Schema2, is_valid_rule(K)],
+    Schema3 = [T || {K, _} = T <- Schema2, is_valid_rule(K, Opts)],
     case Schema2 =:= Schema3 of
         true ->
             list;
         false ->
             jsobject
     end;
-detect_datatype_by_schema(_Schema) ->
+detect_datatype_by_schema(_Schema, _Opts) ->
     term.
 
-is_valid_rule(Rule) ->
-    which(Rule) /= undefined_module.
+is_valid_rule(Rule, Opts) ->
+    which(Rule, Opts) /= undefined_module.
+
+normalize_opts(Opts) when is_map(Opts) ->
+    Opts;
+normalize_opts(Opts) when is_list(Opts) ->
+    maps:from_list(Opts).
+
+%% Active rule map for this call.
+%%
+%% rule_set values:
+%%   erlang_standard | livr_spec     — built-in single sets
+%%   #{Rule => Module}               — inline custom map
+%%   NamedAtom                       — from liver:add_rule_set/2
+%%   [Set1, Set2, ...]               — ordered composition; **first wins**
+%%   {mixed, erlang_standard}        — alias for [erlang_standard, livr_spec]
+%%   {mixed, livr_spec}              — alias for [livr_spec, erlang_standard]
+%%
+%% livr_compatible => true is an alias for rule_set => livr_spec.
+rules_map(Opts) ->
+    compose_rule_sets(rule_set(Opts)).
+
+rule_set(Opts) ->
+    case maps:find(rule_set, Opts) of
+        {ok, Set} ->
+            Set;
+        error ->
+            case maps:get(livr_compatible, Opts, false) of
+                true -> livr_spec;
+                false -> erlang_standard
+            end
+    end.
+
+compose_rule_sets({mixed, erlang_standard}) ->
+    compose_rule_sets([erlang_standard, livr_spec]);
+compose_rule_sets({mixed, livr_spec}) ->
+    compose_rule_sets([livr_spec, erlang_standard]);
+compose_rule_sets(Set) when is_atom(Set); is_map(Set) ->
+    resolve_rule_set(Set);
+compose_rule_sets(Sets) when is_list(Sets), Sets =/= [] ->
+    %% First entry has highest priority on name collision.
+    lists:foldl(fun(Set, Acc) ->
+        maps:merge(resolve_rule_set(Set), Acc)
+    end, #{}, Sets);
+compose_rule_sets([]) ->
+    error(empty_rule_set);
+compose_rule_sets(Other) ->
+    error({invalid_rule_set, Other}).
+
+resolve_rule_set(erlang_standard) ->
+    application:get_env(?MODULE, rules, ?ERLANG_STANDARD_RULES);
+resolve_rule_set(livr_spec) ->
+    ?LIVR_SPEC_RULES;
+resolve_rule_set(Map) when is_map(Map) ->
+    Map;
+resolve_rule_set(Name) when is_atom(Name) ->
+    Sets = application:get_env(?MODULE, rule_sets, #{}),
+    case maps:find(Name, Sets) of
+        {ok, Map} when is_map(Map) ->
+            Map;
+        error ->
+            error({unknown_rule_set, Name})
+    end.
