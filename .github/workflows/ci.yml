@@ -34,7 +34,7 @@ jobs:
       uses: erlef/setup-beam@v1
       with:
         otp-version: '27'
-        version-type: strict
+        version-type: loose
 
     - name: Install dependencies
       run: make
