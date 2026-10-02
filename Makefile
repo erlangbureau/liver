@@ -20,6 +20,7 @@ dep_ci.erlang.mk = git https://github.com/ninenines/ci.erlang.mk master
 # output used by ci.erlang.mk's GitHub Actions OTP matrix. Load it only
 # outside the multi-OTP CI workflow (coverage job / local uploads).
 ifndef CI_ERLANG_MK
+BUILD_DEPS += coveralls.mk
 DEP_PLUGINS = coveralls.mk
 dep_coveralls.mk = git https://github.com/erlangbureau/coveralls.mk master
 endif
