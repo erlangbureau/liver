@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `liver_openapi_schema`: export liver schemas to OpenAPI 3 documents and
+  import Schema Objects into `erlang_standard` validation schemas (MVP).
+  See [doc/openapi.md](doc/openapi.md).
+
 ## [1.0.0] - 2026-10-03
 
 Almost ten years after the first version (**2017-11-21**), this is the stable

@@ -13,6 +13,7 @@ schemas when you opt in.
 |------|--|
 | [Standard rules](doc/standard_rules.md) | Default rule reference |
 | [LIVR vs standard](doc/livr_vs_standard.md) | How to choose a rule set |
+| [OpenAPI](doc/openapi.md) | Export / import Schema Objects (MVP) |
 | [Changelog](CHANGELOG.md) | Releases and breaking changes |
 
 ## Table of Contents
@@ -20,6 +21,7 @@ schemas when you opt in.
 * [Getting Started](#getting-started)
 * [Usage Examples](#usage-examples)
 * [Rule sets](#rule-sets)
+* [OpenAPI](#openapi)
 * [Exports](#exports)
 * [License](#license)
 
@@ -156,6 +158,17 @@ liver:validate(Schema, Data,
 
 Details: [doc/livr_vs_standard.md](doc/livr_vs_standard.md),
 [doc/standard_rules.md](doc/standard_rules.md).
+
+## OpenAPI
+
+MVP helpers in `liver_openapi_schema`:
+
+* **Export** — path map or `Module:liver_schema/0` → OpenAPI 3 document
+  (`generate_schema/2`, `generate/2`)
+* **Import** — Schema Object → `erlang_standard` field schema
+  (`from_openapi_schema/1,2`) for `liver:validate/2`
+
+See [doc/openapi.md](doc/openapi.md) for supported constructs and limitations.
 
 ## Exports
 
