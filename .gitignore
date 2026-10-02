@@ -13,3 +13,8 @@ liver.d
 src/*.swp
 src/sets/*.swp
 tests/*.swp
+cover/
+.tmp/
+ebin/test
+tests/ct.cover.spec
+

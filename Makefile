@@ -10,7 +10,7 @@ AUTO_CI_OTP ?= OTP-LATEST-24+
 AUTO_CI_WINDOWS ?= OTP-LATEST-21+
 
 CT_OPTS = -cover ./tests/cover.spec
-TEST_DEPS = LIVR jsx iso8601 coveralls.mk
+TEST_DEPS = jsx coveralls.mk
 TEST_DIR = tests
 COVER=1
 
@@ -19,8 +19,6 @@ DIALYZER_OPTS += -I include
 dep_ci.erlang.mk    = git https://github.com/ninenines/ci.erlang.mk         master
 dep_coveralls.mk    = git https://github.com/erlangbureau/coveralls.mk      master
 dep_jsx             = git https://github.com/talentdeficit/jsx              v2.8.3
-dep_LIVR            = git https://github.com/koorchik/LIVR                  master
-dep_iso8601         = git https://github.com/erlsci/iso8601                 1.3.4
 
-
+include livr_spec.mk
 include erlang.mk

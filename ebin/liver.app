@@ -4,5 +4,6 @@
 	{modules, ['liver','liver_bstring','liver_float','liver_livr_rules','liver_maps','liver_rules','liver_strict_rules']},
 	{registered, []},
 	{applications, [kernel,stdlib]},
+	{optional_applications, []},
 	{env, []}
 ]}.
