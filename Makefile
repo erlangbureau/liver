@@ -10,7 +10,7 @@ AUTO_CI_OTP ?= OTP-LATEST-24+
 AUTO_CI_WINDOWS ?= OTP-LATEST-21+
 
 CT_OPTS = -cover ./tests/cover.spec
-TEST_DEPS = jsx coveralls.mk
+TEST_DEPS = coveralls.mk
 TEST_DIR = tests
 COVER=1
 
@@ -18,7 +18,6 @@ DIALYZER_OPTS += -I include
 
 dep_ci.erlang.mk    = git https://github.com/ninenines/ci.erlang.mk         master
 dep_coveralls.mk    = git https://github.com/erlangbureau/coveralls.mk      master
-dep_jsx             = git https://github.com/talentdeficit/jsx              v2.8.3
 
 include livr_spec.mk
 include erlang.mk

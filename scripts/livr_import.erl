@@ -1,7 +1,7 @@
 %% Import LIVR JSON test_suite into local Erlang .config cases.
 %%
 %% Decode path (important for honesty of both fixture sets):
-%%   1) jsx:decode/1  -> proplists (JSON key order preserved)
+%%   1) json:decode/3 -> proplists (JSON key order preserved; OTP 27+)
 %%   2) convert rules on that proplist structure
 %%   3) apply_known_patches/3 for documented LIVR/JSON mismatches
 %%   4) write tests/cases/livr/proplists/{positive,negative}/*.config
@@ -146,12 +146,27 @@ set_key(Key, List, Value) ->
 decode_proplist(Path) ->
     {ok, Bin} = file:read_file(Path),
     try
-        %% No return_maps: objects become proplists, key order preserved.
-        jsx:decode(Bin, [])
+        {Value, ok, <<>>} = json:decode(Bin, ok, json_proplist_decoders()),
+        Value
     catch
         _:Reason ->
             error({json_decode_failed, Path, Reason})
     end.
+
+%% OTP json defaults to maps; keep insertion order via proplists.
+%% Empty objects use the [{}] sentinel (same as historical jsx decode).
+json_proplist_decoders() ->
+    #{
+        object_push => fun(Key, Value, Acc) ->
+            [{Key, Value} | Acc]
+        end,
+        object_finish => fun
+            ([], OldAcc) ->
+                {[{}], OldAcc};
+            (Acc, OldAcc) ->
+                {lists:reverse(Acc), OldAcc}
+        end
+    }.
 
 %% ---- rule conversion on proplists (order-preserving) ----
 
@@ -301,7 +316,7 @@ write_case(Path, Form, Kind, Dir, Atom, Sha, CaseTerm, Patches) ->
         "%% LIVR ~s/~s (case: ~p, form: ~p)~n"
         "%% Source: https://github.com/koorchik/LIVR/tree/~s/test_suite/~s/~s~n"
         "%% Imported for liver; iso_date outputs use Erlang {Y,M,D} dates.~n"
-        "%% Proplist fixtures preserve JSON key order from jsx:decode/1.~n"
+        "%% Proplist fixtures preserve JSON key order from json:decode/3.~n"
         "~s~n",
         [Kind, Dir, Atom, Form, Sha, Kind, Dir, PatchNote]),
     Body = [format_term(CaseTerm, 0), ".\n"],
