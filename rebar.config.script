@@ -1,0 +1,8 @@
+%% rebar.config.script — jsx only when OTP json is unavailable (< 27).
+OTP = list_to_integer(erlang:system_info(otp_release)),
+Deps = case OTP < 27 of
+    true -> [{jsx, "3.1.0"}];
+    false -> []
+end,
+NewConfig = lists:keystore(deps, 1, CONFIG, {deps, Deps}),
+NewConfig.

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `liver_openapi_schema`: export liver schemas to OpenAPI 3 documents and
   import Schema Objects into `erlang_standard` validation schemas (MVP).
   See [doc/openapi.md](doc/openapi.md).
+- OpenAPI JSON I/O: OTP `json` on OTP 27+, **jsx** dependency on older OTP.
 
 ## [1.0.0] - 2026-10-03
 

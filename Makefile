@@ -17,6 +17,13 @@ DIALYZER_OPTS += -I include
 
 dep_ci.erlang.mk = git https://github.com/ninenines/ci.erlang.mk master
 
+# OpenAPI JSON: OTP 27+ has `json`; older releases use jsx.
+OTP_RELEASE := $(shell erl -noshell -eval 'io:format("~s",[erlang:system_info(otp_release)]),halt().')
+ifeq ($(shell test "$(OTP_RELEASE)" -lt 27 >/dev/null 2>&1; echo $$?),0)
+DEPS += jsx
+dep_jsx = hex 3.1.0
+endif
+
 # coveralls.mk prints DEP/PATCH while fetching; that pollutes `make ci-list`
 # output used by ci.erlang.mk's GitHub Actions OTP matrix. Load it only
 # outside the multi-OTP CI workflow (coverage job / local uploads).

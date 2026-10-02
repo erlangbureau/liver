@@ -49,7 +49,9 @@ field schema for `liver:validate/2`:
 liver:validate(Schema, #{<<"name">> => <<"bob">>, <<"age">> => 30}).
 ```
 
-JSON binaries are accepted (`json:decode` first).
+JSON binaries are accepted. Encoding/decoding uses OTP `json` on OTP 27+
+and **jsx** on older releases (pulled in automatically when building with
+erlang.mk / rebar3 on OTP < 27).
 
 ### Supported (MVP)
 

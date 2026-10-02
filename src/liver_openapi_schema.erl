@@ -54,7 +54,7 @@ from_openapi_schema(Schema) ->
     from_openapi_schema(Schema, #{}).
 
 from_openapi_schema(Bin, Opts) when is_binary(Bin), is_map(Opts) ->
-    from_openapi_schema(json:decode(Bin), Opts);
+    from_openapi_schema(decode_json(Bin), Opts);
 from_openapi_schema(Schema, Opts) when is_map(Schema), is_map(Opts) ->
     case schema_to_field_schema(Schema) of
         {ok, FieldSchema} ->
@@ -68,7 +68,24 @@ from_openapi_schema(Schema, Opts) when is_map(Schema), is_map(Opts) ->
 %%--------------------------------------------------------------------
 
 encode_json(Term) ->
+    encode_json_impl(Term).
+
+decode_json(Bin) when is_binary(Bin) ->
+    decode_json_impl(Bin).
+
+-if(?OTP_RELEASE >= 27).
+encode_json_impl(Term) ->
     iolist_to_binary(json:encode(Term)).
+
+decode_json_impl(Bin) ->
+    json:decode(Bin).
+-else.
+encode_json_impl(Term) ->
+    jsx:encode(Term).
+
+decode_json_impl(Bin) ->
+    jsx:decode(Bin, [return_maps]).
+-endif.
 
 document_schema(PathSchema, Opts) ->
     Host = maps:get(host, Opts, <<"127.0.0.1">>),
