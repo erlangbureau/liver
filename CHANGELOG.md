@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [doc/livr_vs_standard.md](doc/livr_vs_standard.md).
 - [doc/standard_rules.md](doc/standard_rules.md) expanded as a standalone rule
   reference for `erlang_standard`.
+- CI OTP matrix starts at **25** (`OTP-LATEST-25+`). OTP 24 is no longer
+  published for `erlef/setup-beam` on aarch64 macOS runners.
 
 ## [1.0.0] - 2026-10-03
 

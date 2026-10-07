@@ -6,8 +6,8 @@ PROJECT_VERSION ?= $(shell git describe --dirty --abbrev=7 --tags --always --fir
 BUILD_DEPS = ci.erlang.mk
 DEP_EARLY_PLUGINS = ci.erlang.mk
 
-AUTO_CI_OTP ?= OTP-LATEST-24+
-AUTO_CI_WINDOWS ?= OTP-LATEST-21+
+AUTO_CI_OTP ?= OTP-LATEST-25+
+AUTO_CI_WINDOWS ?= OTP-LATEST-25+
 
 CT_OPTS = -cover ./tests/cover.spec
 TEST_DIR = tests
