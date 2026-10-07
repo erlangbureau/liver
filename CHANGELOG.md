@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-07
+
+### Breaking
+
+- **`erlang_standard` error codes are lowercase atoms** (`not_integer`,
+  `required`, `format_error`) instead of LIVR-style binaries
+  (`<<"NOT_INTEGER">>`). `livr_spec` still returns those binaries.
+
 ### Added
 
 - `liver_openapi_schema`: export liver schemas to OpenAPI 3 documents and
@@ -148,7 +156,8 @@ LIVR.
 - Rules including `email`, `url`, `iso_date`, `equal_to_field`, `variable_object`,
   `or`, list meta-rules, and Unicode `to_lower` / `to_upper`.
 
-[Unreleased]: https://github.com/erlangbureau/liver/compare/1.0.0...HEAD
+[Unreleased]: https://github.com/erlangbureau/liver/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/erlangbureau/liver/compare/1.0.0...1.1.0
 [1.0.0]: https://github.com/erlangbureau/liver/compare/0.9.4...1.0.0
 [0.9.4]: https://github.com/erlangbureau/liver/compare/0.9.3...0.9.4
 [0.9.3]: https://github.com/erlangbureau/liver/compare/0.9.2...0.9.3

@@ -135,9 +135,22 @@ Schema = #{
 | Option | Default | Meaning |
 |--------|---------|---------|
 | `return` | `as_is` | `as_is` \| `map` \| `proplist` |
-| `strict` | `false` | Reject unknown fields (`UNKNOWN_FIELD`) |
+| `strict` | `false` | Reject unknown fields (`unknown_field`) |
 | `rule_set` | `erlang_standard` | Atom, map, or ordered list of sets |
 | `livr_compatible` | `false` | Alias for `rule_set => livr_spec` |
+
+## Error codes
+
+Since **1.1.0**, failed fields return **lowercase atoms** — the same names
+rules emit internally (`not_integer`, `required`, `format_error`, …):
+
+```erlang
+liver:validate(#{n => is_integer}, #{n => <<"10">>}).
+%% {error, #{n => not_integer}}
+```
+
+`livr_spec` still uses LIVR’s uppercase binaries (`<<"NOT_INTEGER">>`).
+`liver:custom_error/2` can substitute a custom term for a given code.
 
 ## See also
 

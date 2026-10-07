@@ -41,8 +41,9 @@ validate_map(Schema, In, Opts0)
     Out         = liver_maps:new(ReturnType),
     Errors      = liver_maps:new(ReturnType),
     validate(Keys, Schema, In, Out, Errors, Opts);
-validate_map(_Schema, _In, _Opts) ->
-    ErrorMsg = custom_error_message(format_error),
+validate_map(_Schema, _In, Opts0) ->
+    Opts = try normalize_opts(Opts0) catch _:_ -> #{} end,
+    ErrorMsg = error_code(format_error, Opts),
     {error, ErrorMsg}.
 
 validate_list(Schema, Data, Opts0) when is_list(Data) andalso ?IsKV(Opts0) ->
@@ -106,7 +107,7 @@ validate([{K, intersection}|Keys], Schema, In, Out, Errors, Opts) ->
             Out2 = liver_maps:put(K, Value2, Out),
             validate(Keys, Schema, In, Out2, Errors, Opts);
         {error, Err} ->
-            ErrorCode = custom_error_message(Err),
+            ErrorCode = error_code(Err, Opts),
             Errors2 = liver_maps:put(K, ErrorCode, Errors),
             validate(Keys, Schema, In, Out, Errors2, Opts)
     end;
@@ -121,7 +122,7 @@ validate([{K, schema}|Keys], Schema, In, Out, Errors, Opts) ->
                     Out2 = liver_maps:put(K, Value2, Out),
                     validate(Keys, Schema, In, Out2, Errors, Opts);
                 {error, Err} ->
-                    ErrorCode = custom_error_message(Err),
+                    ErrorCode = error_code(Err, Opts),
                     Errors2 = liver_maps:put(K, ErrorCode, Errors),
                     validate(Keys, Schema, In, Out, Errors2, Opts)
             end;
@@ -136,7 +137,7 @@ validate([{K, data}|Keys], Schema, In, Out, Errors, Opts) ->
             validate(Keys, Schema, In, Out, Errors, Opts);
         true ->
             %% Strict validation enabled
-            ErrorCode = custom_error_message(unknown_field),
+            ErrorCode = error_code(unknown_field, Opts),
             Errors2 = liver_maps:put(K, ErrorCode, Errors),
             validate(Keys, Schema, In, Out, Errors2, Opts)
     end;
@@ -171,9 +172,32 @@ get_return_type(Opts, InData) ->
         as_is       -> liver_maps:type(InData)
     end.
 
-custom_error_message(Code) ->
+%% erlang_standard: lowercase atoms (`not_integer`).
+%% livr_spec: LIVR binaries (`<<"NOT_INTEGER">>`).
+%% `custom_error/2` overrides still apply to both.
+error_code(Code, Opts) when is_atom(Code) ->
     Errors = application:get_env(?MODULE, errors, ?DEFAULT_ERRORS),
-    maps:get(Code, Errors, Code).
+    case livr_error_codes(Opts) of
+        true ->
+            maps:get(Code, Errors, Code);
+        false ->
+            Default = maps:get(Code, ?DEFAULT_ERRORS, undefined),
+            case maps:find(Code, Errors) of
+                {ok, Default} -> Code;
+                {ok, Custom} -> Custom;
+                error -> Code
+            end
+    end;
+error_code(Other, _Opts) ->
+    Other.
+
+livr_error_codes(Opts) ->
+    case rule_set(Opts) of
+        livr_spec -> true;
+        {mixed, livr_spec} -> true;
+        [livr_spec | _] -> true;
+        _ -> false
+    end.
 
 detect_datatype_by_schema(Schema, _Opts) when is_map(Schema) ->
     jsobject;

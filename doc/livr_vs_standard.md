@@ -11,6 +11,7 @@ explains how they differ and **where “implicit conversion” comes from**.
 | Naming | LIVR 2.0 (`integer`, `string`, …) | Erlang-ish (`is_integer`, `is_utf8_binary`, …) |
 | Typical data | JSON / forms / HTTP bodies | OTP messages, DB rows, internal APIs |
 | Type handling | Coerce when the LIVR rule says so | Check types; convert only via `to_*` |
+| Error codes | Uppercase binaries (`<<"NOT_INTEGER">>`) | Lowercase atoms (`not_integer`, since **1.1.0**) |
 
 They are not “Liver vs LIVR”. Both live in the same validator; you choose (or
 compose) the rule map.
@@ -48,7 +49,7 @@ layer). Therefore `erlang_standard`’s `is_integer` **only** accepts integers:
 
 ```erlang
 liver:validate(#{age => is_integer}, #{age => <<"30">>}).
-%% {error, #{age => <<"NOT_INTEGER">>}}
+%% {error, #{age => not_integer}}
 
 liver:validate(#{age => [to_integer, is_integer]}, #{age => <<"30">>}).
 %% {ok, #{age => 30}}

@@ -50,15 +50,15 @@ presence(_Config) ->
     %% is_not_undefined
     ok(#{a => is_not_undefined}, #{a => 1}, #{a => 1}),
     %% required
-    err(#{a => required}, #{}, #{a => <<"REQUIRED">>}),
+    err(#{a => required}, #{}, #{a => required}),
     %% is_null
-    err(#{a => is_null}, #{a => 1}, #{a => <<"NOT_NULL">>}),
+    err(#{a => is_null}, #{a => 1}, #{a => not_null}),
     %% is_not_null
-    err(#{a => is_not_null}, #{a => null}, #{a => <<"CANNOT_BE_NULL">>}),
+    err(#{a => is_not_null}, #{a => null}, #{a => cannot_be_null}),
     %% is_undefined
-    err(#{a => is_undefined}, #{a => 1}, #{a => <<"NOT_UNDEFINED">>}),
+    err(#{a => is_undefined}, #{a => 1}, #{a => not_undefined}),
     %% is_not_undefined
-    err(#{a => is_not_undefined}, #{a => undefined}, #{a => <<"CANNOT_BE_UNDEFINED">>}),
+    err(#{a => is_not_undefined}, #{a => undefined}, #{a => cannot_be_undefined}),
     ok.
 
 %%--------------------------------------------------------------------
@@ -121,61 +121,61 @@ types(_Config) ->
     %% is_term
     ok(#{t => is_term}, #{t => {x,y}}, #{t => {x,y}}),
     %% is_integer
-    err(#{n => is_integer}, #{n => <<"10">>}, #{n => <<"NOT_INTEGER">>}),
+    err(#{n => is_integer}, #{n => <<"10">>}, #{n => not_integer}),
     %% is_string
-    err(#{s => is_string}, #{s => <<"hello">>}, #{s => <<"NOT_STRING">>}),
+    err(#{s => is_string}, #{s => <<"hello">>}, #{s => not_string}),
     %% is_non_neg_integer
-    err(#{n => is_non_neg_integer}, #{n => -1}, #{n => <<"NOT_NON_NEG_INTEGER">>}),
+    err(#{n => is_non_neg_integer}, #{n => -1}, #{n => not_non_neg_integer}),
     %% is_integer_under_livr_spec
     err(#{n => is_integer}, #{n => 10}, #{n => {unimplemented_rule,is_integer}}, #{rule_set => livr_spec}),
     %% is_integer_positive
-    err(#{n => {is_integer,[positive]}}, #{n => -1}, #{n => <<"NOT_INTEGER">>}),
+    err(#{n => {is_integer,[positive]}}, #{n => -1}, #{n => not_integer}),
     %% is_pos_integer
-    err(#{n => is_pos_integer}, #{n => 0}, #{n => <<"NOT_POSITIVE_INTEGER">>}),
+    err(#{n => is_pos_integer}, #{n => 0}, #{n => not_pos_integer}),
     %% is_float
-    err(#{n => is_float}, #{n => 1}, #{n => <<"NOT_FLOAT">>}),
+    err(#{n => is_float}, #{n => 1}, #{n => not_float}),
     %% is_number
-    err(#{n => is_number}, #{n => a}, #{n => <<"NOT_NUMBER">>}),
+    err(#{n => is_number}, #{n => a}, #{n => not_number}),
     %% is_boolean
-    err(#{b => is_boolean}, #{b => 1}, #{b => <<"NOT_BOOLEAN">>}),
+    err(#{b => is_boolean}, #{b => 1}, #{b => not_boolean}),
     %% is_atom
-    err(#{a => is_atom}, #{a => <<"x">>}, #{a => <<"NOT_ATOM">>}),
+    err(#{a => is_atom}, #{a => <<"x">>}, #{a => not_atom}),
     %% is_list_not_empty
-    err(#{l => {is_list,[not_empty]}}, #{l => []}, #{l => <<"CANNOT_BE_EMPTY">>}),
+    err(#{l => {is_list,[not_empty]}}, #{l => []}, #{l => cannot_be_empty}),
     %% is_list_empty
-    err(#{l => {is_list,[empty]}}, #{l => [1]}, #{l => <<"NOT_EMPTY">>}),
+    err(#{l => {is_list,[empty]}}, #{l => [1]}, #{l => not_empty}),
     %% is_list
-    err(#{l => is_list}, #{l => <<>>}, #{l => <<"NOT_LIST">>}),
+    err(#{l => is_list}, #{l => <<>>}, #{l => not_list}),
     %% is_string_not_empty
-    err(#{s => {is_string,[not_empty]}}, #{s => []}, #{s => <<"CANNOT_BE_EMPTY">>}),
+    err(#{s => {is_string,[not_empty]}}, #{s => []}, #{s => cannot_be_empty}),
     %% is_string_empty
-    err(#{s => {is_string,[empty]}}, #{s => "a"}, #{s => <<"NOT_EMPTY">>}),
+    err(#{s => {is_string,[empty]}}, #{s => "a"}, #{s => not_empty}),
     %% is_string_bad_chars
-    err(#{s => is_string}, #{s => [1.5]}, #{s => <<"NOT_STRING">>}),
+    err(#{s => is_string}, #{s => [1.5]}, #{s => not_string}),
     %% is_utf8_binary_not_empty
-    err(#{b => {is_utf8_binary,[not_empty]}}, #{b => <<>>}, #{b => <<"CANNOT_BE_EMPTY">>}),
+    err(#{b => {is_utf8_binary,[not_empty]}}, #{b => <<>>}, #{b => cannot_be_empty}),
     %% is_utf8_binary_empty
-    err(#{b => {is_utf8_binary,[empty]}}, #{b => <<"a">>}, #{b => <<"NOT_EMPTY">>}),
+    err(#{b => {is_utf8_binary,[empty]}}, #{b => <<"a">>}, #{b => not_empty}),
     %% is_utf8_binary_invalid
-    err(#{b => is_utf8_binary}, #{b => <<"ÿ">>}, #{b => <<"NOT_UTF8_BINARY">>}),
+    err(#{b => is_utf8_binary}, #{b => <<"ÿ">>}, #{b => not_utf8_binary}),
     %% is_utf8_binary
-    err(#{b => is_utf8_binary}, #{b => 1}, #{b => <<"NOT_UTF8_BINARY">>}),
+    err(#{b => is_utf8_binary}, #{b => 1}, #{b => not_utf8_binary}),
     %% is_binary_not_empty
-    err(#{b => {is_binary,[not_empty]}}, #{b => <<>>}, #{b => <<"CANNOT_BE_EMPTY">>}),
+    err(#{b => {is_binary,[not_empty]}}, #{b => <<>>}, #{b => cannot_be_empty}),
     %% is_binary_empty
-    err(#{b => {is_binary,[empty]}}, #{b => <<"x">>}, #{b => <<"NOT_EMPTY">>}),
+    err(#{b => {is_binary,[empty]}}, #{b => <<"x">>}, #{b => not_empty}),
     %% is_binary
-    err(#{b => is_binary}, #{b => []}, #{b => <<"NOT_BINARY">>}),
+    err(#{b => is_binary}, #{b => []}, #{b => not_binary}),
     %% is_map
-    err(#{m => is_map}, #{m => []}, #{m => <<"NOT_MAP">>}),
+    err(#{m => is_map}, #{m => []}, #{m => not_map}),
     %% is_proplist
-    err(#{p => is_proplist}, #{p => [1]}, #{p => <<"NOT_PROPLIST">>}),
+    err(#{p => is_proplist}, #{p => [1]}, #{p => not_proplist}),
     %% is_proplist_map
-    err(#{p => is_proplist}, #{p => #{}}, #{p => <<"NOT_PROPLIST">>}),
+    err(#{p => is_proplist}, #{p => #{}}, #{p => not_proplist}),
     %% is_tuple_size
-    err(#{t => {is_tuple,[{size,2}]}}, #{t => {1}}, #{t => <<"WRONG_TUPLE_SIZE">>}),
+    err(#{t => {is_tuple,[{size,2}]}}, #{t => {1}}, #{t => wrong_tuple_size}),
     %% is_tuple
-    err(#{t => is_tuple}, #{t => []}, #{t => <<"NOT_TUPLE">>}),
+    err(#{t => is_tuple}, #{t => []}, #{t => not_tuple}),
     ok.
 
 %%--------------------------------------------------------------------
@@ -224,41 +224,41 @@ constraints(_Config) ->
     %% length_between
     ok(#{l => {length,[{between,1,3}]}}, #{l => [1,2]}, #{l => [1,2]}),
     %% one_of_terms
-    err(#{v => {one_of_terms,[[a,b]]}}, #{v => c}, #{v => <<"NOT_ALLOWED_VALUE">>}),
+    err(#{v => {one_of_terms,[[a,b]]}}, #{v => c}, #{v => not_allowed_value}),
     %% range
-    err(#{v => {range,[{1,10}]}}, #{v => 11}, #{v => <<"TOO_HIGH">>}),
+    err(#{v => {range,[{1,10}]}}, #{v => 11}, #{v => too_high}),
     %% one_of_terms_format
-    err(#{v => {one_of_terms,not_a_list}}, #{v => a}, #{v => <<"FORMAT_ERROR">>}),
+    err(#{v => {one_of_terms,not_a_list}}, #{v => a}, #{v => format_error}),
     %% member
-    err(#{v => {member,[[a,b]]}}, #{v => c}, #{v => <<"NOT_MEMBER">>}),
+    err(#{v => {member,[[a,b]]}}, #{v => c}, #{v => not_member}),
     %% member_format
-    err(#{v => {member,not_a_list}}, #{v => a}, #{v => <<"FORMAT_ERROR">>}),
+    err(#{v => {member,not_a_list}}, #{v => a}, #{v => format_error}),
     %% range_too_low
-    err(#{v => {range,[1,10]}}, #{v => 0}, #{v => <<"TOO_LOW">>}),
+    err(#{v => {range,[1,10]}}, #{v => 0}, #{v => too_low}),
     %% range_format
-    err(#{v => {range,[only_one]}}, #{v => 1}, #{v => <<"FORMAT_ERROR">>}),
+    err(#{v => {range,[only_one]}}, #{v => 1}, #{v => format_error}),
     %% range_not_number
-    err(#{v => {range,[1,10]}}, #{v => x}, #{v => <<"NOT_NUMBER">>}),
+    err(#{v => {range,[1,10]}}, #{v => x}, #{v => not_number}),
     %% byte_size
-    err(#{b => {byte_size,[{eq,3}]}}, #{b => <<"ab">>}, #{b => <<"WRONG_BYTE_SIZE">>}),
+    err(#{b => {byte_size,[{eq,3}]}}, #{b => <<"ab">>}, #{b => wrong_byte_size}),
     %% byte_size_not_binary
-    err(#{b => {byte_size,[{eq,1}]}}, #{b => []}, #{b => <<"NOT_BINARY">>}),
+    err(#{b => {byte_size,[{eq,1}]}}, #{b => []}, #{b => not_binary}),
     %% bit_size
-    err(#{b => {bit_size,[{eq,8}]}}, #{b => <<1:3>>}, #{b => <<"WRONG_BIT_SIZE">>}),
+    err(#{b => {bit_size,[{eq,8}]}}, #{b => <<1:3>>}, #{b => wrong_bit_size}),
     %% bit_size_not_binary
-    err(#{b => {bit_size,[{eq,1}]}}, #{b => []}, #{b => <<"NOT_BINARY">>}),
+    err(#{b => {bit_size,[{eq,1}]}}, #{b => []}, #{b => not_binary}),
     %% tuple_size
-    err(#{t => {tuple_size,[{eq,3}]}}, #{t => {a,b}}, #{t => <<"WRONG_TUPLE_SIZE">>}),
+    err(#{t => {tuple_size,[{eq,3}]}}, #{t => {a,b}}, #{t => wrong_tuple_size}),
     %% tuple_size_not_tuple
-    err(#{t => {tuple_size,[{eq,1}]}}, #{t => []}, #{t => <<"NOT_TUPLE">>}),
+    err(#{t => {tuple_size,[{eq,1}]}}, #{t => []}, #{t => not_tuple}),
     %% map_size
-    err(#{m => {map_size,[{eq,2}]}}, #{m => #{a => 1}}, #{m => <<"WRONG_MAP_SIZE">>}),
+    err(#{m => {map_size,[{eq,2}]}}, #{m => #{a => 1}}, #{m => wrong_map_size}),
     %% map_size_not_map
-    err(#{m => {map_size,[{eq,1}]}}, #{m => []}, #{m => <<"NOT_MAP">>}),
+    err(#{m => {map_size,[{eq,1}]}}, #{m => []}, #{m => not_map}),
     %% length
-    err(#{l => {length,[{eq,3}]}}, #{l => [1]}, #{l => <<"WRONG_LENGTH">>}),
+    err(#{l => {length,[{eq,3}]}}, #{l => [1]}, #{l => wrong_length}),
     %% length_not_list
-    err(#{l => {length,[{eq,1}]}}, #{l => <<>>}, #{l => <<"NOT_LIST">>}),
+    err(#{l => {length,[{eq,1}]}}, #{l => <<>>}, #{l => not_list}),
     ok.
 
 %%--------------------------------------------------------------------
@@ -369,45 +369,45 @@ converters(_Config) ->
     %% to_proplist_identity
     ok(#{p => to_proplist}, #{p => [{a,1}]}, #{p => [{a,1}]}),
     %% to_existing_atom
-    err(#{a => to_existing_atom}, #{a => <<"no_such_atom_xyz_liver_test">>}, #{a => <<"CANNOT_BE_ATOM">>}),
+    err(#{a => to_existing_atom}, #{a => <<"no_such_atom_xyz_liver_test">>}, #{a => cant_be_atom}),
     %% to_integer
-    err(#{n => to_integer}, #{n => <<"x">>}, #{n => <<"CANNOT_BE_INTEGER">>}),
+    err(#{n => to_integer}, #{n => <<"x">>}, #{n => cant_be_integer}),
     %% to_integer_list
-    err(#{n => to_integer}, #{n => "x"}, #{n => <<"CANNOT_BE_INTEGER">>}),
+    err(#{n => to_integer}, #{n => "x"}, #{n => cant_be_integer}),
     %% to_integer_bad
-    err(#{n => to_integer}, #{n => []}, #{n => <<"CANNOT_BE_INTEGER">>}),
+    err(#{n => to_integer}, #{n => []}, #{n => cant_be_integer}),
     %% to_float
-    err(#{n => to_float}, #{n => <<"x">>}, #{n => <<"CANNOT_BE_FLOAT">>}),
+    err(#{n => to_float}, #{n => <<"x">>}, #{n => cant_be_float}),
     %% to_float_list
-    err(#{n => to_float}, #{n => "x"}, #{n => <<"CANNOT_BE_FLOAT">>}),
+    err(#{n => to_float}, #{n => "x"}, #{n => cant_be_float}),
     %% to_float_bad
-    err(#{n => to_float}, #{n => []}, #{n => <<"CANNOT_BE_FLOAT">>}),
+    err(#{n => to_float}, #{n => []}, #{n => cant_be_float}),
     %% to_string
-    err(#{s => to_string}, #{s => [1.5]}, #{s => <<"CANNOT_BE_STRING">>}),
+    err(#{s => to_string}, #{s => [1.5]}, #{s => cant_be_string}),
     %% to_string_bad_bin
-    err(#{s => to_string}, #{s => <<"ÿ">>}, #{s => <<"CANNOT_BE_STRING">>}),
+    err(#{s => to_string}, #{s => <<"ÿ">>}, #{s => cant_be_string}),
     %% to_utf8_binary
-    err(#{b => to_utf8_binary}, #{b => <<"ÿ">>}, #{b => <<"CANNOT_BE_BINARY">>}),
+    err(#{b => to_utf8_binary}, #{b => <<"ÿ">>}, #{b => cant_be_binary}),
     %% to_utf8_binary_bad_list
-    err(#{b => to_utf8_binary}, #{b => [1114112]}, #{b => <<"CANNOT_BE_BINARY">>}),
+    err(#{b => to_utf8_binary}, #{b => [1114112]}, #{b => cant_be_binary}),
     %% to_binary
-    err(#{b => to_binary}, #{b => 1.5}, #{b => <<"CANNOT_BE_BINARY">>}),
+    err(#{b => to_binary}, #{b => 1.5}, #{b => cant_be_binary}),
     %% to_atom
-    err(#{a => to_atom}, #{a => 1}, #{a => <<"CANNOT_BE_ATOM">>}),
+    err(#{a => to_atom}, #{a => 1}, #{a => cant_be_atom}),
     %% to_existing_atom_list
-    err(#{a => to_existing_atom}, #{a => "no_such_atom_xyz_liver_cov"}, #{a => <<"CANNOT_BE_ATOM">>}),
+    err(#{a => to_existing_atom}, #{a => "no_such_atom_xyz_liver_cov"}, #{a => cant_be_atom}),
     %% to_existing_atom_bad
-    err(#{a => to_existing_atom}, #{a => 1}, #{a => <<"CANNOT_BE_ATOM">>}),
+    err(#{a => to_existing_atom}, #{a => 1}, #{a => cant_be_atom}),
     %% to_list
-    err(#{l => to_list}, #{l => 1}, #{l => <<"CANNOT_BE_LIST">>}),
+    err(#{l => to_list}, #{l => 1}, #{l => cant_be_list}),
     %% to_map
-    err(#{m => to_map}, #{m => [1]}, #{m => <<"CANNOT_BE_MAP">>}),
+    err(#{m => to_map}, #{m => [1]}, #{m => cant_be_map}),
     %% to_map_bad
-    err(#{m => to_map}, #{m => 1}, #{m => <<"CANNOT_BE_MAP">>}),
+    err(#{m => to_map}, #{m => 1}, #{m => cant_be_map}),
     %% to_proplist
-    err(#{p => to_proplist}, #{p => [1]}, #{p => <<"CANNOT_BE_PROPLIST">>}),
+    err(#{p => to_proplist}, #{p => [1]}, #{p => cant_be_proplist}),
     %% to_proplist_bad
-    err(#{p => to_proplist}, #{p => 1}, #{p => <<"CANNOT_BE_PROPLIST">>}),
+    err(#{p => to_proplist}, #{p => 1}, #{p => cant_be_proplist}),
     ok.
 
 %%--------------------------------------------------------------------
@@ -460,16 +460,16 @@ special(_Config) ->
     ok(#{d => iso_date}, #{d => <<"2020-01-02">>}, #{d => {2020,1,2}}),
     ok(#{d => iso_date}, #{d => {2020,1,2}}, #{d => {2020,1,2}}),
     %% negatives
-    err(#{e => email}, #{e => <<"not-an-email">>}, #{e => <<"WRONG_EMAIL">>}),
-    err(#{e => email}, #{e => <<"a@@b.com">>}, #{e => <<"WRONG_EMAIL">>}),
-    err(#{e => email}, #{e => 1}, #{e => <<"FORMAT_ERROR">>}),
-    err(#{u => url}, #{u => <<"ftp://example.com">>}, #{u => <<"WRONG_URL">>}),
-    err(#{u => url}, #{u => <<"not-a-url">>}, #{u => <<"WRONG_URL">>}),
-    err(#{u => url}, #{u => 1}, #{u => <<"FORMAT_ERROR">>}),
-    err(#{d => iso_date}, #{d => {2020,2,30}}, #{d => <<"WRONG_DATE">>}),
-    err(#{d => iso_date}, #{d => <<"2020-13-01">>}, #{d => <<"WRONG_DATE">>}),
-    err(#{d => iso_date}, #{d => <<"bad">>}, #{d => <<"WRONG_DATE">>}),
-    err(#{d => iso_date}, #{d => 1}, #{d => <<"FORMAT_ERROR">>}),
+    err(#{e => email}, #{e => <<"not-an-email">>}, #{e => wrong_email}),
+    err(#{e => email}, #{e => <<"a@@b.com">>}, #{e => wrong_email}),
+    err(#{e => email}, #{e => 1}, #{e => format_error}),
+    err(#{u => url}, #{u => <<"ftp://example.com">>}, #{u => wrong_url}),
+    err(#{u => url}, #{u => <<"not-a-url">>}, #{u => wrong_url}),
+    err(#{u => url}, #{u => 1}, #{u => format_error}),
+    err(#{d => iso_date}, #{d => {2020,2,30}}, #{d => wrong_date}),
+    err(#{d => iso_date}, #{d => <<"2020-13-01">>}, #{d => wrong_date}),
+    err(#{d => iso_date}, #{d => <<"bad">>}, #{d => wrong_date}),
+    err(#{d => iso_date}, #{d => 1}, #{d => format_error}),
     ok.
 
 %%--------------------------------------------------------------------
@@ -486,13 +486,13 @@ nested(_Config) ->
     %% nested_list
     ok(#{l => {nested_list,is_integer}}, #{l => [1,2]}, #{l => [1,2]}),
     %% nested_map
-    err(#{obj => {nested_map,#{name => [required,is_atom]}}}, #{obj => #{}}, #{obj => #{name => <<"REQUIRED">>}}),
+    err(#{obj => {nested_map,#{name => [required,is_atom]}}}, #{obj => #{}}, #{obj => #{name => required}}),
     %% nested_map_format
-    err(#{o => {nested_map,#{n => is_integer}}}, #{o => 1}, #{o => <<"FORMAT_ERROR">>}),
+    err(#{o => {nested_map,#{n => is_integer}}}, #{o => 1}, #{o => format_error}),
     %% nested_proplist
-    err(#{o => {nested_proplist,#{n => is_integer}}}, #{o => 1}, #{o => <<"NOT_PROPLIST">>}),
+    err(#{o => {nested_proplist,#{n => is_integer}}}, #{o => 1}, #{o => not_proplist}),
     %% nested_list
-    err(#{l => {nested_list,is_integer}}, #{l => <<>>}, #{l => <<"NOT_LIST">>}),
+    err(#{l => {nested_list,is_integer}}, #{l => <<>>}, #{l => not_list}),
     ok.
 
 %%--------------------------------------------------------------------
@@ -529,7 +529,7 @@ rule_sets(_Config) ->
     %% livr_name_unavailable
     err(#{n => integer}, #{n => <<"10">>}, #{n => {unimplemented_rule,integer}}),
     %% strict_unknown_field
-    err(#{a => is_integer}, #{a => 1,x => 2}, #{x => <<"UNKNOWN_FIELD">>}, #{strict => true}),
+    err(#{a => is_integer}, #{a => 1,x => 2}, #{x => unknown_field}, #{strict => true}),
     ok.
 
 %%--------------------------------------------------------------------
@@ -544,19 +544,19 @@ runtime_types(_Config) ->
     Fun1 = fun(_) -> ok end,
     try
         ok(#{p => is_pid}, #{p => Pid}, #{p => Pid}),
-        err(#{p => is_pid}, #{p => 1}, #{p => <<"NOT_PID">>}),
+        err(#{p => is_pid}, #{p => 1}, #{p => not_pid}),
         ok(#{r => is_ref}, #{r => Ref}, #{r => Ref}),
-        err(#{r => is_ref}, #{r => 1}, #{r => <<"NOT_REFERENCE">>}),
+        err(#{r => is_ref}, #{r => 1}, #{r => not_ref}),
         ok(#{p => is_port}, #{p => Port}, #{p => Port}),
-        err(#{p => is_port}, #{p => 1}, #{p => <<"NOT_PORT">>}),
+        err(#{p => is_port}, #{p => 1}, #{p => not_port}),
         ok(#{f => is_fun}, #{f => Fun0}, #{f => Fun0}),
         ok(#{f => {is_fun, [{arity, 1}]}}, #{f => Fun1}, #{f => Fun1}),
-        err(#{f => {is_fun, [{arity, 2}]}}, #{f => Fun1}, #{f => <<"NOT_FUN">>}),
-        err(#{f => is_fun}, #{f => 1}, #{f => <<"NOT_FUN">>}),
-        err(#{s => to_string}, #{s => Pid}, #{s => <<"CANNOT_BE_STRING">>}),
-        err(#{b => to_utf8_binary}, #{b => Pid}, #{b => <<"CANNOT_BE_BINARY">>}),
-        err(#{b => to_utf8_binary}, #{b => [1.5]}, #{b => <<"FORMAT_ERROR">>}),
-        err(#{b => to_binary}, #{b => [Pid]}, #{b => <<"CANNOT_BE_BINARY">>})
+        err(#{f => {is_fun, [{arity, 2}]}}, #{f => Fun1}, #{f => not_fun}),
+        err(#{f => is_fun}, #{f => 1}, #{f => not_fun}),
+        err(#{s => to_string}, #{s => Pid}, #{s => cant_be_string}),
+        err(#{b => to_utf8_binary}, #{b => Pid}, #{b => cant_be_binary}),
+        err(#{b => to_utf8_binary}, #{b => [1.5]}, #{b => format_error}),
+        err(#{b => to_binary}, #{b => [Pid]}, #{b => cant_be_binary})
     after
         catch erlang:port_close(Port)
     end,

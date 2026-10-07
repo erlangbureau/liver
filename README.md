@@ -76,14 +76,14 @@ See [Comparing the sets](doc/livr_vs_standard.md) for a fuller explanation.
   * **rebar** — `rebar.config`:
   ```erl
 {deps, [
-    {liver, {git, "https://github.com/erlangbureau/liver.git", {tag, "1.0.0"}}}
+    {liver, {git, "https://github.com/erlangbureau/liver.git", {tag, "1.1.0"}}}
 ]}.
 ```
 
   * **erlang.mk**:
 ```erl
 DEPS = liver
-dep_liver = git https://github.com/erlangbureau/liver.git 1.0.0
+dep_liver = git https://github.com/erlangbureau/liver.git 1.1.0
 ```
 
 2. Add `liver` to `applications` in your `.app.src`.
@@ -95,6 +95,10 @@ dep_liver = git https://github.com/erlangbureau/liver.git 1.0.0
 > Existing LIVR schemas keep working with
 > `#{rule_set => livr_spec}` or `#{livr_compatible => true}`.
 > Details: [CHANGELOG.md](CHANGELOG.md#100---2026-10-03).
+>
+> **Upgrading to 1.1.0:** `erlang_standard` errors are lowercase atoms
+> (`not_integer`) instead of binaries (`<<"NOT_INTEGER">>`). `livr_spec` is
+> unchanged. Details: [CHANGELOG.md](CHANGELOG.md#110---2026-10-07).
 
 ## Usage Examples
 
@@ -111,7 +115,7 @@ dep_liver = git https://github.com/erlangbureau/liver.git 1.0.0
 
 3> %% Binary is not an integer — no silent parse
 3> liver:validate(#{n => is_integer}, #{n => <<"10">>}).
-{error,#{n => <<"NOT_INTEGER">>}}
+{error,#{n => not_integer}}
 
 4> %% Parse explicitly, then check
 4> liver:validate(#{n => [to_integer, is_pos_integer]}, #{n => <<"10">>}).
@@ -246,7 +250,9 @@ add_rule_set(Name, Rules) -> ok
 custom_error(ErrorCode, ErrorMessage) -> ok
 ```
 
-Override a built-in error code message (binary).
+Override a built-in error code. From **1.1.0**, default `erlang_standard`
+errors are lowercase atoms (`not_integer`); `livr_spec` uses LIVR binaries
+(`<<"NOT_INTEGER">>`).
 
 ## License
 
