@@ -4,15 +4,25 @@
 
 ## Summary
 
-Liver is a lightweight Erlang/OTP data validator. By default it uses
-**standard rules** tailored to Erlang terms (no silent type coercion). It also
-implements the [LIVR](http://livr-spec.org) rule set for JSON-style / legacy
-schemas when you opt in.
+Liver is a lightweight Erlang/OTP data validator **inspired by
+[LIVR](http://livr-spec.org)**. It follows the same ideas: declarative rules per
+field, all errors at once, stable error codes, and easy custom rules.
+
+Liver ships **two rule sets**:
+
+- **`erlang_standard`** (default) — for Erlang terms inside OTP applications
+- **`livr_spec`** — full LIVR 2.0 rule names and behaviour (including the
+  upstream LIVR test suite)
+
+Both are first-class. The default changed in 1.0.0 because most Erlang code
+works with typed terms, not JSON strings; LIVR remains fully available via
+`#{rule_set => livr_spec}` (or `livr_compatible => true`).
 
 | Docs | |
 |------|--|
-| [Standard rules](doc/standard_rules.md) | Default rule reference |
-| [LIVR vs standard](doc/livr_vs_standard.md) | How to choose a rule set |
+| [Standard rules](doc/standard_rules.md) | Reference for `erlang_standard` |
+| [LIVR rules](doc/livr_rules.md) | Reference for `livr_spec` |
+| [Comparing the sets](doc/livr_vs_standard.md) | Coercion, naming, when to use which |
 | [OpenAPI](doc/openapi.md) | Export / import Schema Objects (MVP) |
 | [Changelog](CHANGELOG.md) | Releases and breaking changes |
 
@@ -27,25 +37,37 @@ schemas when you opt in.
 
 ## Description
 
-**LIVR-inspired design:**
+**From LIVR (design shared by Liver):**
 
 1. Declarative rules, many per field
 2. All field errors returned together
-3. Nested structures supported
-4. Stable error codes (not free-form messages)
-5. Easy to add project-specific rules
+3. Fields without rules are excluded from the output
+4. Nested structures supported
+5. Stable error codes (not free-form messages)
+6. Easy to add project-specific rules
+7. Rules may transform values (`trim`, nested validators, converters, …)
+8. Unicode-aware where it matters
 
-**Liver-specific:**
+**Liver extras:**
 
-1. **Standard rules by default** — Erlang types (`is_integer`, `is_utf8_binary`,
-   `is_atom`, …) without silent coercion; explicit `to_*` converters
-2. **LIVR rule set on demand** — `#{rule_set => livr_spec}` for spec-compatible
-   schemas (and the upstream LIVR test suite)
-3. Optional **mixed** rule sets with explicit collision priority
-4. `strict` option — reject fields not described in the schema
-5. Maps and proplists as input/output (`return => map | proplist | as_is`)
-6. List as root value (validate a list of terms/objects)
-7. Custom error codes and `add_rule/2` for extensions
+1. Two built-in rule maps — LIVR-spec and Erlang-oriented — selectable / composable
+2. Maps and proplists as input/output (`return => map | proplist | as_is`)
+3. `strict` option — reject fields not described in the schema
+4. List as root value
+5. `add_rule/2`, `add_rule_set/2`, custom error messages
+
+### Why two rule sets?
+
+LIVR grew up around **JSON and HTML forms**: numbers and booleans often arrive
+as **binaries** (`<<"10">>`, `<<"true">>`). Spec rules such as `integer` therefore
+**parse and coerce** as part of validation.
+
+OTP applications more often already have **Erlang types** (`10`, `true`, atoms).
+Silent coercion there hides bugs. The default `erlang_standard` set uses
+predicates (`is_integer`, …) and **explicit** `to_*` converters when you want
+parsing.
+
+See [Comparing the sets](doc/livr_vs_standard.md) for a fuller explanation.
 
 ## Getting Started
 
@@ -68,15 +90,15 @@ dep_liver = git https://github.com/erlangbureau/liver.git 1.0.0
 
 3. Validate data, or register your own rules with `liver:add_rule/2`.
 
-> **Upgrading from 0.9.x:** since the first version (2017-11-21) Liver was
-> LIVR-compatible and stayed pre-1.0 until an Erlang-native default was ready.
-> That default is now `erlang_standard`. LIVR schemas need
-> `#{rule_set => livr_spec}` (or `livr_compatible => true`).
+> **Upgrading from 0.9.x:** Liver was LIVR-oriented from the first version
+> (2017-11-21). In **1.0.0** the default rule set became `erlang_standard`.
+> Existing LIVR schemas keep working with
+> `#{rule_set => livr_spec}` or `#{livr_compatible => true}`.
 > Details: [CHANGELOG.md](CHANGELOG.md#100---2026-10-03).
 
 ## Usage Examples
 
-### Standard rules (default)
+### Erlang-oriented rules (default)
 
 ```erlang
 1> Schema = #{
@@ -87,11 +109,11 @@ dep_liver = git https://github.com/erlangbureau/liver.git 1.0.0
 2> liver:validate(Schema, #{name => <<"Ann">>, age => 30, role => admin}).
 {ok,#{age => 30,name => <<"Ann">>,role => admin}}
 
-3> %% No silent coercion: binary is not an integer
+3> %% Binary is not an integer — no silent parse
 3> liver:validate(#{n => is_integer}, #{n => <<"10">>}).
 {error,#{n => <<"NOT_INTEGER">>}}
 
-4> %% Convert explicitly, then check
+4> %% Parse explicitly, then check
 4> liver:validate(#{n => [to_integer, is_pos_integer]}, #{n => <<"10">>}).
 {ok,#{n => 10}}
 ```
@@ -118,9 +140,7 @@ dep_liver = git https://github.com/erlangbureau/liver.git 1.0.0
 {error,#{b => <<"UNKNOWN_FIELD">>}}
 ```
 
-### LIVR rule set (opt-in)
-
-Use when you need LIVR names and JSON-oriented coercion:
+### LIVR rules (same validator, LIVR rule map)
 
 ```erlang
 8> Schema = #{
@@ -134,19 +154,19 @@ Use when you need LIVR names and JSON-oriented coercion:
 {ok,#{<<"street">> => <<"Main">>,<<"zip">> => 12345}}
 ```
 
+`positive_integer` here accepts `<<"12345">>` because that is how LIVR is
+specified for JSON-style input.
+
 ## Rule sets
 
 | `rule_set` | Behaviour |
 |------------|-----------|
-| `erlang_standard` (default) | Only `liver_standard_rules` |
-| `livr_spec` | Only `liver_livr_rules` |
-| `[Set1, Set2, …]` | Compose sets; **first wins** on the same rule name |
+| `erlang_standard` (default) | `liver_standard_rules` |
+| `livr_spec` | `liver_livr_rules` (LIVR 2.0 names) |
+| `[Set1, Set2, …]` | Compose; **first wins** on the same rule name |
 | `#{Rule => Module}` | Inline custom rule map |
 | `{mixed, erlang_standard}` | Alias for `[erlang_standard, livr_spec]` |
 | `{mixed, livr_spec}` | Alias for `[livr_spec, erlang_standard]` |
-
-Each list entry may be a built-in atom, a name from `liver:add_rule_set/2`,
-or an inline map.
 
 ```erlang
 liver:add_rule_set(my_app, #{slug => my_app_rules}).
@@ -156,19 +176,17 @@ liver:validate(Schema, Data,
 
 `#{livr_compatible => true}` is an alias for `#{rule_set => livr_spec}`.
 
-Details: [doc/livr_vs_standard.md](doc/livr_vs_standard.md),
-[doc/standard_rules.md](doc/standard_rules.md).
+References: [standard rules](doc/standard_rules.md), [LIVR rules](doc/livr_rules.md),
+[comparison](doc/livr_vs_standard.md).
 
 ## OpenAPI
 
 MVP helpers in `liver_openapi_schema`:
 
 * **Export** — path map or `Module:liver_schema/0` → OpenAPI 3 document
-  (`generate_schema/2`, `generate/2`)
 * **Import** — Schema Object → `erlang_standard` field schema
-  (`from_openapi_schema/1,2`) for `liver:validate/2`
 
-See [doc/openapi.md](doc/openapi.md) for supported constructs and limitations.
+See [doc/openapi.md](doc/openapi.md).
 
 ## Exports
 
@@ -204,8 +222,6 @@ which(Rule) -> module() | undefined_module
 which(Rule, Opts) -> module() | undefined_module
 ```
 
-Resolve which module implements `Rule` for the given options.
-
 ### `add_rule/2`
 
 ```erlang
@@ -222,13 +238,6 @@ add_rule_set(Name, Rules) -> ok
 
   Name = atom()
   Rules = #{atom() => module()}
-```
-
-Register a named rule map for composition:
-
-```erlang
-liver:add_rule_set(billing, #{iban => billing_rules}).
-liver:validate(Schema, Data, #{rule_set => [billing, erlang_standard]}).
 ```
 
 ### `custom_error/2`

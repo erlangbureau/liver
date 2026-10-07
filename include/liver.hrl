@@ -64,7 +64,7 @@
 }).
 
 %% LIVR specification rule names. Enabled via #{rule_set => livr_spec}.
-%% Mutually exclusive with erlang_standard unless mixed mode is used.
+%% Compose with erlang_standard via an ordered rule_set list when needed.
 -define(LIVR_SPEC_RULES, #{
     required                    => liver_livr_rules,
     not_empty                   => liver_livr_rules,

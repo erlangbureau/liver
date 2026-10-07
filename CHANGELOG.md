@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   import Schema Objects into `erlang_standard` validation schemas (MVP).
   See [doc/openapi.md](doc/openapi.md).
 - OpenAPI JSON I/O: OTP `json` on OTP 27+, **jsx** dependency on older OTP.
+- [doc/livr_rules.md](doc/livr_rules.md) — full reference for the `livr_spec` rule set.
+
+### Changed
+
+- README and docs: Liver framed as **LIVR-inspired** with a full LIVR rule set,
+  not as “incompatible with LIVR”. Implicit coercion explained in
+  [doc/livr_vs_standard.md](doc/livr_vs_standard.md).
+- [doc/standard_rules.md](doc/standard_rules.md) expanded as a standalone rule
+  reference for `erlang_standard`.
 
 ## [1.0.0] - 2026-10-03
 
