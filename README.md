@@ -24,6 +24,7 @@ works with typed terms, not JSON strings; LIVR remains fully available via
 | [LIVR rules](doc/livr_rules.md) | Reference for `livr_spec` |
 | [Comparing the sets](doc/livr_vs_standard.md) | Coercion, naming, when to use which |
 | [OpenAPI](doc/openapi.md) | Export / import Schema Objects (MVP) |
+| [JSON Schema](doc/json_schema.md) | Export / import JSON Schema (MVP) |
 | [Changelog](CHANGELOG.md) | Releases and breaking changes |
 
 ## Table of Contents
@@ -32,6 +33,7 @@ works with typed terms, not JSON strings; LIVR remains fully available via
 * [Usage Examples](#usage-examples)
 * [Rule sets](#rule-sets)
 * [OpenAPI](#openapi)
+* [JSON Schema](#json-schema)
 * [Exports](#exports)
 * [License](#license)
 
@@ -191,6 +193,16 @@ MVP helpers in `liver_openapi_schema`:
 * **Import** — Schema Object → `erlang_standard` field schema
 
 See [doc/openapi.md](doc/openapi.md).
+
+## JSON Schema
+
+MVP helpers in `liver_json_schema`:
+
+* **Export** — field schema or rule list → JSON Schema (`$schema` Draft 2020-12)
+* **Import** — JSON Schema object → Liver field schema
+  (`rule_set => erlang_standard` or `livr_spec`)
+
+See [doc/json_schema.md](doc/json_schema.md).
 
 ## Exports
 

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `liver_json_schema`: bidirectional conversion between Liver field schemas and
+  JSON Schema (Draft 2020-12). Import supports `rule_set => erlang_standard`
+  (default) or `livr_spec`. See [doc/json_schema.md](doc/json_schema.md).
+
 ## [1.1.0] - 2026-10-07
 
 ### Breaking
