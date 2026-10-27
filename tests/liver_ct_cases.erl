@@ -10,7 +10,7 @@ run(Case, Config) ->
     Suite = ?config(cases_suite, Config),
     DefaultOpts = ?config(validate_opts, Config),
     CaseData = load_case(Suite, Form, Kind, Case),
-    {Rules, Input, Expected, Opts} = unpack(Kind, Form, CaseData, DefaultOpts),
+    {Rules, Input, Expected, Opts} = unpack(expectation(Kind), Form, CaseData, DefaultOpts),
     case liver:validate(Rules, Input, Opts) of
         Expected ->
             ok;
@@ -22,6 +22,10 @@ run(Case, Config) ->
     end.
 
 %% internal
+expectation(aliases_positive) -> positive;
+expectation(aliases_negative) -> negative;
+expectation(Kind) -> Kind.
+
 unpack(positive, maps, #{rules := Rules, input := Input, output := Output} = Data, DefaultOpts) ->
     {Rules, Input, {ok, Output}, maps:merge(DefaultOpts, maps:get(opts, Data, #{}))};
 unpack(negative, maps, #{rules := Rules, input := Input, errors := Errors} = Data, DefaultOpts) ->

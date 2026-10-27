@@ -14,7 +14,7 @@ run(Source, ManifestPath) when is_list(Source), is_list(ManifestPath) ->
     Extra = lists:sort(sets:to_list(sets:subtract(Local, Remote))),
     FormGaps = missing_form_files(CasesRoot, Local),
     io:format("Local MANIFEST sha: ~s~n", [Sha]),
-    io:format("Local cases: ~p; upstream positive+negative: ~p~n",
+    io:format("Local cases: ~p; upstream: ~p~n",
               [sets:size(Local), sets:size(Remote)]),
     case {Missing, Extra, FormGaps} of
         {[], [], []} ->
@@ -62,7 +62,7 @@ upstream_cases(Source) ->
             {error, Reason} ->
                 error({missing_suite_dir, Root, Reason})
         end
-    end, sets:new(), ["positive", "negative"]).
+    end, sets:new(), ["positive", "negative", "aliases_positive", "aliases_negative"]).
 
 missing_form_files(CasesRoot, Local) ->
     lists:sort(lists:foldl(fun(Case, Acc) ->

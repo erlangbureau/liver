@@ -217,9 +217,11 @@ like(_Args, <<>>, _Opts) ->
 like(Args, Value, _Opts) when is_binary(Value); is_number(Value) ->
     Value2 = to_binary(Value),
     {Pattern, ReOpts} = case Args of
-        [RegEx, <<"i">>|_]  -> {RegEx, [unicode, caseless]};
-        [RegEx|_]           -> {RegEx, [unicode]};
-        RegEx               -> {RegEx, [unicode]}
+        %% dollar_endonly: $ matches only at the end of the value, as in JavaScript,
+        %% not before a trailing newline
+        [RegEx, <<"i">>|_]  -> {RegEx, [unicode, dollar_endonly, caseless]};
+        [RegEx|_]           -> {RegEx, [unicode, dollar_endonly]};
+        RegEx               -> {RegEx, [unicode, dollar_endonly]}
     end,
     case re:compile(Pattern, ReOpts) of
         {ok, MP} ->
@@ -381,10 +383,12 @@ number_between(_Args, _Value, _Opts) ->
 email(_Args, <<>> = Value, _Opts) ->
     {ok, Value};
 email(_Args, Value, _Opts) when is_binary(Value) ->
-    Pattern = "^(([^<>()\\[\\]\\\\.,;:\s@\"]+(\\.[^<>()\\[\\]\\.,;:\s@\"]+)*)"
-        "|(\".+\"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\])"
+    %% No whitespace (newlines included) outside quotes; dollar_endonly keeps
+    %% $ from matching before a trailing newline.
+    Pattern = "^(([^<>()\\[\\]\\\\.,;:\\s@\"]+(\\.[^<>()\\[\\]\\\\.,;:\\s@\"]+)*)"
+        "|(\"[^@\\n\\r]+\"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\])"
         "|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$",
-    case re:run(Value, Pattern, [caseless, anchored]) of
+    case re:run(Value, Pattern, [caseless, anchored, dollar_endonly]) of
         nomatch -> {error, wrong_email};
         _       -> {ok, Value}
     end;
@@ -468,7 +472,10 @@ equal_to_field(_Args, <<>> = Value, _Opts) ->
     {ok, Value};
 equal_to_field(FieldValue, Value, _Opts)
         when is_binary(Value); is_integer(Value); is_float(Value) ->
-    case Value =:= FieldValue of
+    %% LIVR compares the values as strings: <<"10">> equals 10.
+    IsEqual = (is_binary(FieldValue) orelse is_number(FieldValue))
+        andalso to_binary(FieldValue) =:= to_binary(Value),
+    case IsEqual of
         true    -> {ok, Value};
         false   -> {error, fields_not_equal}
     end;

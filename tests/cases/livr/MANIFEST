@@ -1,9 +1,15 @@
-sha 44f0453b2cff7fdbb23c6cf48abe29fa8c601bf8
+sha 4384f09e60d758d5c3ef3c76e8a29eac8ec688a0
 url https://github.com/koorchik/LIVR
-suites positive negative
+suites positive negative aliases_positive aliases_negative
 forms maps proplists
 
 # cases
+aliases_negative/01-adult_age
+aliases_negative/02-address
+aliases_negative/03-adult_age_in_user
+aliases_positive/01-adult_age
+aliases_positive/02-address
+aliases_positive/03-adult_age_in_user
 negative/01-required
 negative/02-not_empty
 negative/03-one_of

@@ -34,3 +34,6 @@ min_length(Config) -> liver_ct_cases:run(min_length, Config).
 one_of(Config) -> liver_ct_cases:run(one_of, Config).
 not_empty(Config) -> liver_ct_cases:run(not_empty, Config).
 required(Config) -> liver_ct_cases:run(required, Config).
+adult_age_in_user(Config) -> liver_ct_cases:run(adult_age_in_user, Config).
+address(Config) -> liver_ct_cases:run(address, Config).
+adult_age(Config) -> liver_ct_cases:run(adult_age, Config).

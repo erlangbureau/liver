@@ -77,7 +77,7 @@ These rules treat **JSON-style strings** as numbers when needed
 | `email` | — | Basic email check on a binary |
 | `url` | — | HTTP(S) URL check on a binary |
 | `iso_date` | — | `YYYY-MM-DD` binary → Erlang `{Y,M,D}` date |
-| `equal_to_field` | FieldName | Must equal another field’s value |
+| `equal_to_field` | FieldName | Must equal another field’s value, compared as strings (`<<"10">>` equals `10`) |
 
 ## Meta rules
 
@@ -100,6 +100,25 @@ These rules treat **JSON-style strings** as numbers when needed
 | `remove` | Chars | Remove listed characters |
 | `leave_only` | Chars | Keep only listed characters |
 | `default` | Value | If field missing / empty, use Value |
+
+## Aliased rules
+
+[LIVR aliases](https://livr-spec.org/rules-aliasing.html) define a new rule from other
+rules, as data. Register one with `liver:add_aliased_rule/1`, or pass a list of
+them in the `aliased_rules` option of a call:
+
+```erlang
+liver:add_aliased_rule(#{
+    name => valid_address,
+    rules => #{nested_object => #{
+        <<"country">> => required,
+        <<"zip">> => positive_integer
+    }},
+    error => <<"WRONG_ADDRESS">>    % optional: replaces the errors of the rules
+}),
+liver:validate(#{<<"address">> => [required, valid_address]}, Data,
+               #{rule_set => livr_spec}).
+```
 
 ## Examples
 

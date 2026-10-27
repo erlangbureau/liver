@@ -68,3 +68,15 @@
     variable_object,
     'or'
 ]).
+
+-define(LIVR_ALIASES_POSITIVE_CASES, [
+    adult_age,
+    address,
+    adult_age_in_user
+]).
+
+-define(LIVR_ALIASES_NEGATIVE_CASES, [
+    adult_age,
+    address,
+    adult_age_in_user
+]).

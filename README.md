@@ -49,6 +49,7 @@ works with typed terms, not JSON strings; LIVR remains fully available via
 6. Easy to add project-specific rules
 7. Rules may transform values (`trim`, nested validators, converters, …)
 8. Unicode-aware where it matters
+9. [Aliased rules](#add_aliased_rule1): new rules made of other rules, as data
 
 **Liver extras:**
 
@@ -230,6 +231,7 @@ validate(Schema, Input, Opts) -> {ok, Output} | {error, Errors}
 | `strict` | `false` | Reject fields not in schema |
 | `rule_set` | `erlang_standard` | See [Rule sets](#rule-sets) |
 | `livr_compatible` | `false` | Alias for `rule_set => livr_spec` |
+| `aliased_rules` | `[]` | Aliased rules for this call, see [`add_aliased_rule/1`](#add_aliased_rule1) |
 
 ### `which/1`, `which/2`
 
@@ -254,6 +256,47 @@ add_rule_set(Name, Rules) -> ok
 
   Name = atom()
   Rules = #{atom() => module()}
+```
+
+### `add_aliased_rule/1`
+
+```erlang
+add_aliased_rule(Alias) -> ok
+
+  Alias = #{name := atom() | binary(), rules := Rules, error => ErrorCode}
+        | proplist()
+```
+
+Register a [LIVR aliased rule](https://livr-spec.org/rules-aliasing.html):
+a named rule made of other rules. The alias rules validate the field value
+(and may change it, like any rule); if `error` is set, it replaces their
+errors (an atom such as `wrong_age` with `erlang_standard`, a binary such as
+`<<"WRONG_AGE">>` with `livr_spec`). Keys may be binaries too, so an alias
+decoded from JSON works as is.
+Registered aliases are kept in a `persistent_term`: cheap to read on every
+`validate/3` call, costly to update, so register them at start-up.
+
+```erlang
+1> liver:add_aliased_rule(#{name => adult_age,
+                            rules => [positive_integer, #{min_number => 18}],
+                            error => <<"WRONG_AGE">>}).
+ok
+2> liver:validate(#{age => [required, adult_age]}, #{age => <<"15">>},
+                  #{rule_set => livr_spec}).
+{error,#{age => <<"WRONG_AGE">>}}
+```
+
+Aliases work anywhere a rule does: in nested rules (`nested_object`,
+`list_of`, `'or'`, `nested_map`, …) and in other aliases. The alias rules
+use the rule set of the call. For aliases of a single call, pass the same
+alias terms in the `aliased_rules` option; they take precedence over
+registered ones:
+
+```erlang
+liver:validate(Schema, Data, #{rule_set => livr_spec,
+                               aliased_rules => [#{name => adult_age,
+                                                   rules => [positive_integer,
+                                                             #{min_number => 18}]}]}).
 ```
 
 ### `custom_error/2`

@@ -12,6 +12,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `liver_json_schema`: bidirectional conversion between Liver field schemas and
   JSON Schema (Draft 2020-12). Import supports `rule_set => erlang_standard`
   (default) or `livr_spec`. See [doc/json_schema.md](doc/json_schema.md).
+- LIVR aliased rules: `liver:add_aliased_rule/1` and the `aliased_rules`
+  option of `validate/3`. See [README](README.md#add_aliased_rule1).
+- The LIVR `aliases_positive` / `aliases_negative` suites run in
+  `livr_rules_SUITE`.
+
+### Changed
+
+- CI: a rebar3 job runs `rebar3 ct` on OTP 25 and 29; `actions/checkout` v7.
+
+### Fixed
+
+- `livr_spec`: `equal_to_field` compares the values as strings
+  (`<<"10">>` equals `10`), as in LIVR 2.0.
+- `livr_spec`: `email` rejects whitespace (newlines, tabs) and a quoted local
+  part with `@`, as the LIVR 2.0 pattern does.
+- `livr_spec`: `'or'` runs on a missing field, so branches with `required`
+  return `REQUIRED`.
+- `like`: `$` matches only at the end of the value, as in JavaScript, so
+  `^[0-9]{5}$` no longer accepts `"12345\n"`.
+- `return => proplist` with `nested_list`, `list_of`, `'or'` or a list as the
+  root schema: it returned `format_error` or crashed.
 
 ## [1.1.0] - 2026-10-07
 
