@@ -15,6 +15,7 @@ all() ->
         string_form,
         clock,
         schema_error_at_validate,
+        unknown_rule_at_validate,
         null_argument,
         eq_one_of_booleans,
         unique_key_value_format,
@@ -109,6 +110,49 @@ schema_error_at_validate(_Config) ->
     ?assertEqual({error, {unknown_rule, no_such_rule}},
                  liver:check_schema(#{b => [required, no_such_rule]}, ?LIVR)),
     ?assertEqual(ok, liver:check_schema(#{b => [required, boolean]}, ?LIVR)).
+
+%% 2.6: an unknown rule is a schema error of validate/3, also when no
+%% data reaches it; the schemas that passed are checked again after a
+%% rule, a rule set or an aliased rule is registered
+unknown_rule_at_validate(_Config) ->
+    Unknown = {unknown_rule, no_such_rule},
+    %% top level: the field present and missing
+    ?assertError(Unknown, liver:validate(#{a => no_such_rule}, #{a => 1}, ?LIVR)),
+    ?assertError(Unknown, liver:validate(#{a => [required, no_such_rule]}, #{}, ?LIVR)),
+    ?assertError(Unknown, liver:validate(#{a => no_such_rule}, #{}, ?LIVR)),
+    %% nested, in a list and in an 'or' branch that does not run
+    ?assertError(Unknown, liver:validate(#{a => {nested_object, #{b => no_such_rule}}},
+                                         #{a => #{}}, ?LIVR)),
+    ?assertError(Unknown, liver:validate(#{a => {list_of, [no_such_rule]}}, #{a => []}, ?LIVR)),
+    ?assertError(Unknown, liver:validate(#{a => {list_of_objects, #{b => no_such_rule}}},
+                                         #{}, ?LIVR)),
+    %% a rule list with an unknown rule is a proplist schema for liver, a wrong one
+    ?assertError({invalid_schema, [integer, no_such_rule]},
+                 liver:validate([integer, no_such_rule], 1, ?LIVR)),
+    ?assertError(Unknown, liver:validate(#{a => {'or', [[integer], [no_such_rule]]}},
+                                         #{a => 1}, ?LIVR)),
+    %% through an aliased rule, registered and per call
+    ok = liver:add_aliased_rule(#{name => livr25_broken_alias, rules => [integer, no_such_rule]}),
+    ?assertError(Unknown, liver:validate(#{a => livr25_broken_alias}, #{}, ?LIVR)),
+    Alias = #{name => per_call_alias, rules => [no_such_rule]},
+    ?assertError(Unknown, liver:validate(#{a => per_call_alias}, #{a => 1},
+                                         ?LIVR#{aliased_rules => [Alias]})),
+    %% the same schema twice (the second from the cache), a wrong argument too
+    Schema = #{a => [required, integer]},
+    ?assertEqual({ok, #{a => 1}}, liver:validate(Schema, #{a => 1}, ?LIVR)),
+    ?assertEqual({error, #{a => <<"REQUIRED">>}}, liver:validate(Schema, #{}, ?LIVR)),
+    ?assertError({invalid_args, boolean, 1}, liver:validate(#{a => {boolean, 1}}, #{}, ?LIVR)),
+    %% a rule registered later
+    Opts = #{rule_set => [livr_spec, livr25_later]},
+    ok = liver:add_rule_set(livr25_later, #{}),
+    ?assertError({unknown_rule, later_rule}, liver:validate(#{a => later_rule}, #{}, Opts)),
+    ok = liver:add_rule_set(livr25_later, #{later_rule => ?MODULE}),
+    ?assertEqual({ok, #{}}, liver:validate(#{a => later_rule}, #{}, Opts)),
+    ?assertEqual({ok, #{a => {args, []}}}, liver:validate(#{a => later_rule}, #{a => 1}, Opts)),
+    ok.
+
+later_rule(Args, _Value, _Opts) ->
+    {ok, {args, Args}}.
 
 %% 2.6: {"rule": null} is one null argument, a schema error for the 2.5
 %% rules; iso_date (2.0 ignored its arguments), the other 2.0 rules and

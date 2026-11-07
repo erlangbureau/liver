@@ -17,6 +17,8 @@
 -include("liver_rules.hrl").
 
 -define(ALIASED_RULES_KEY, liver_aliased_rules).
+-define(CHECKED_SCHEMAS_KEY, liver_checked_schemas).
+-define(MAX_CHECKED_SCHEMAS, 1000).
 
 -define(IsKV(Data),
     (is_map(Data) orelse is_list(Data))
@@ -28,6 +30,7 @@ validate(Schema, Data) ->
 
 validate(Schema, Data, Opts) ->
     Opts2 = normalize_opts(Opts),
+    ok = check_schema_cached(Schema, Opts, Opts2),
     case detect_datatype_by_schema(Schema, Opts2) of
         jsobject ->
             validate_map(Schema, Data, Opts2);
@@ -97,14 +100,18 @@ which(Rule, Opts) when is_list(Opts) ->
 add_rule(Rule, Module) when is_atom(Rule), is_atom(Module) ->
     OldRules = application:get_env(?MODULE, rules, ?DEFAULT_RULES),
     NewRules = liver_maps:put(Rule, Module, OldRules),
-    application:set_env(?MODULE, rules, NewRules).
+    application:set_env(?MODULE, rules, NewRules),
+    _ = reset_checked_schemas(),
+    ok.
 
 %% Register a named rule map for use in rule_set lists, e.g.
 %%   liver:add_rule_set(my_app, #{my_rule => my_mod}),
 %%   liver:validate(Schema, Data, #{rule_set => [my_app, erlang_standard]}).
 add_rule_set(Name, Rules) when is_atom(Name), is_map(Rules) ->
     Sets = application:get_env(?MODULE, rule_sets, #{}),
-    application:set_env(?MODULE, rule_sets, maps:put(Name, Rules, Sets)).
+    application:set_env(?MODULE, rule_sets, maps:put(Name, Rules, Sets)),
+    _ = reset_checked_schemas(),
+    ok.
 
 %% Register a LIVR aliased rule: a rule defined by other rules, e.g.
 %%   liver:add_aliased_rule(#{name => adult_age,
@@ -116,7 +123,9 @@ add_aliased_rule(Alias) when is_map(Alias); is_list(Alias) ->
     {Name, Rules, Error} = parse_aliased_rule(Alias),
     Aliases = persistent_term:get(?ALIASED_RULES_KEY, #{}),
     persistent_term:put(?ALIASED_RULES_KEY,
-                        maps:put(Name, {Rules, Error}, Aliases)).
+                        maps:put(Name, {Rules, Error}, Aliases)),
+    _ = reset_checked_schemas(),
+    ok.
 
 custom_error(ErrCode, ErrMsg) when is_atom(ErrCode) ->
     OldErrors = application:get_env(?MODULE, errors, ?DEFAULT_ERRORS),
@@ -125,8 +134,8 @@ custom_error(ErrCode, ErrMsg) when is_atom(ErrCode) ->
 
 %% Check a schema without data, e.g. once at start-up: unknown rules and,
 %% for the rules that check them (the livr_spec set), wrong arguments.
-%% validate/3 raises error({invalid_args, Rule, Args}) for the arguments
-%% of a rule when it runs.
+%% validate/3 raises error(Reason) for the same errors, see
+%% check_schema_cached/3.
 check_schema(Schema) ->
     check_schema(Schema, #{}).
 
@@ -162,6 +171,47 @@ error_code(Other, _Opts) ->
     Other.
 
 %% internal
+
+%% The schema check of validate/3: error(Reason) for a schema error, e.g.
+%% error({unknown_rule, Rule}), also when no data reaches the rule. The
+%% schemas that passed (up to ?MAX_CHECKED_SCHEMAS, with their options) are
+%% kept in persistent terms, so a schema is checked once, until a rule, a
+%% rule set or an aliased rule is registered.
+check_schema_cached(Schema, Opts, NormalizedOpts) ->
+    {Generation, Count} = checked_schemas(),
+    Key = {?CHECKED_SCHEMAS_KEY, Generation, Schema, Opts},
+    case persistent_term:get(Key, false) of
+        true ->
+            ok;
+        false ->
+            case check_schema(Schema, NormalizedOpts) of
+                ok ->
+                    case counters:get(Count, 1) < ?MAX_CHECKED_SCHEMAS of
+                        true ->
+                            counters:add(Count, 1, 1),
+                            persistent_term:put(Key, true);
+                        false ->
+                            ok
+                    end;
+                {error, Reason} ->
+                    error(Reason)
+            end
+    end.
+
+checked_schemas() ->
+    case persistent_term:get(?CHECKED_SCHEMAS_KEY, undefined) of
+        undefined -> reset_checked_schemas();
+        Checked -> Checked
+    end.
+
+%% A new generation of checked schemas; the old one is erased.
+reset_checked_schemas() ->
+    {Generation, _Count} = Checked = {make_ref(), counters:new(1, [])},
+    persistent_term:put(?CHECKED_SCHEMAS_KEY, Checked),
+    _ = [persistent_term:erase(Key)
+         || {{?CHECKED_SCHEMAS_KEY, G, _, _} = Key, _} <- persistent_term:get(),
+            G =/= Generation],
+    Checked.
 
 validate_object(Schema, In, Container, Opts) ->
     SchemaKeys  = liver_maps:keys(Schema),
@@ -380,8 +430,10 @@ resolve_rule_set(Name) when is_atom(Name) ->
 check_fields(Schema, Opts) when ?IsKV(Schema) ->
     case Schema of
         [{}] -> ok;
-        _ -> lists:foreach(fun({_Field, Rules}) -> check_rules(Rules, Opts) end,
-                           to_list(Schema))
+        _ -> lists:foreach(fun
+                 ({_Field, Rules}) -> check_rules(Rules, Opts);
+                 (_) -> throw({schema_error, {invalid_schema, Schema}})
+             end, to_list(Schema))
     end;
 check_fields(Schema, _Opts) ->
     throw({schema_error, {invalid_schema, Schema}}).

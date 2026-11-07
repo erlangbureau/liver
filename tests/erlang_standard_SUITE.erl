@@ -127,7 +127,7 @@ types(_Config) ->
     %% is_non_neg_integer
     err(#{n => is_non_neg_integer}, #{n => -1}, #{n => not_non_neg_integer}),
     %% is_integer_under_livr_spec
-    err(#{n => is_integer}, #{n => 10}, #{n => {unimplemented_rule,is_integer}}, #{rule_set => livr_spec}),
+    unknown(is_integer, #{n => is_integer}, #{n => 10}, #{rule_set => livr_spec}),
     %% is_integer_positive
     err(#{n => {is_integer,[positive]}}, #{n => -1}, #{n => not_integer}),
     %% is_pos_integer
@@ -533,7 +533,7 @@ rule_sets(_Config) ->
     %% binary_rule_list
     ok(#{<<"n">> => [<<"is_integer">>]}, #{<<"n">> => 1}, #{<<"n">> => 1}),
     %% livr_name_unavailable
-    err(#{n => integer}, #{n => <<"10">>}, #{n => {unimplemented_rule,integer}}),
+    unknown(integer, #{n => integer}, #{n => <<"10">>}, #{}),
     %% strict_unknown_field
     err(#{a => is_integer}, #{a => 1,x => 2}, #{x => unknown_field}, #{strict => true}),
     ok.
@@ -609,6 +609,12 @@ ok(Rules, Input, Output, Opts) ->
 
 err(Rules, Input, Errors) ->
     err(Rules, Input, Errors, #{}).
+
+%% An unknown rule is a schema error of validate/3
+unknown(Rule, Rules, Input, Opts) ->
+    ?assertError({unknown_rule, Rule}, liver:validate(Rules, Input, Opts)),
+    {PlRules, PlInput, _, PlOpts} = to_proplists(Rules, Input, #{}, Opts),
+    ?assertError({unknown_rule, Rule}, liver:validate(PlRules, PlInput, PlOpts)).
 
 err(Rules, Input, Errors, Opts) ->
     ?assertEqual({error, Errors}, liver:validate(Rules, Input, Opts)),
