@@ -45,6 +45,9 @@ execute([{Rule, Args}|Rules], Value, Opts) ->
     catch
         error:undef ->
             {error, {unimplemented_rule, Rule}};
+        error:{invalid_args, _, _} = Reason:Stacktrace ->
+            %% a schema error, see liver:check_schema/2
+            erlang:raise(error, Reason, Stacktrace);
         _Type:_Reason ->
             {error, format_error}
     end;
@@ -106,4 +109,6 @@ is_required(not_empty_list) -> true;
 is_required(default)        -> true;
 %% may contain required: runs on a missing field, see liver:validate_term/3
 is_required('or')           -> true;
+is_required(required_if)    -> true;
+is_required('when')         -> true;
 is_required(_)              -> false.

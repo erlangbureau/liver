@@ -17,6 +17,10 @@ DIALYZER_OPTS += -I include
 
 dep_ci.erlang.mk = git https://github.com/ninenines/ci.erlang.mk master
 
+# meck fixes the clock in the LIVR 2.5 tests, see liver_clock.
+TEST_DEPS = meck
+dep_meck = hex 1.2.0
+
 # OpenAPI JSON: OTP 27+ has `json`; older releases use jsx.
 OTP_RELEASE := $(shell erl -noshell -eval 'io:format("~s",[erlang:system_info(otp_release)]),halt().')
 ifeq ($(shell test "$(OTP_RELEASE)" -lt 27 >/dev/null 2>&1; echo $$?),0)
