@@ -156,11 +156,11 @@ Schema = #{
 ```
 
 `today`, `yesterday` and `tomorrow` read the clock through `liver_clock`, so
-tests can fix it with [meck](https://github.com/eproxus/meck):
+tests can fix it (it is a persistent term, so not for production use):
 
 ```erlang
-meck:new(liver_clock, [passthrough]),
-meck:expect(liver_clock, system_time, fun() -> 1792324800000 end).  % ms, UTC
+liver_clock:set_time(1792324800000),  % ms since the epoch, UTC
+liver_clock:set_time(undefined).      % the system time again
 ```
 
 ### Schema errors

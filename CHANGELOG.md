@@ -29,10 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   schema (the schemas that passed are cached), and raise `error(Reason)`,
   e.g. `error({invalid_args, Rule, Args})`.
 - `liver_clock`: the current time of the relative date bounds (`today`,
-  `yesterday`, `tomorrow`, in UTC); tests fix it with meck.
+  `yesterday`, `tomorrow`, in UTC); `liver_clock:set_time/1` fixes it in tests.
 - The LIVR 2.5 suite (`test_suite_2.5`, with `schema_errors`) runs in
   `livr25_rules_SUITE`; `make livr-spec-import` imports it when the LIVR
-  repository has it. meck is a test dependency.
+  repository has it.
 
 ### Changed
 

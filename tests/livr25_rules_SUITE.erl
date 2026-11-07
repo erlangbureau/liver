@@ -2,7 +2,7 @@
 
 %% The LIVR 2.5 test suite (tests/cases/livr25, imported from
 %% test_suite_2.5 of the LIVR repository by scripts/livr_import.erl).
-%% The cases with options.json fix the clock with meck, see liver_clock.
+%% The cases with options.json fix the clock, see liver_clock.
 
 -compile(export_all).
 
@@ -47,11 +47,10 @@ groups() ->
     ].
 
 init_per_suite(Config) ->
-    ok = meck:new(liver_clock, [no_link, passthrough]),
     [{cases_suite, livr25}, {validate_opts, #{rule_set => livr_spec}} | Config].
 
 end_per_suite(Config) ->
-    meck:unload(liver_clock),
+    ok = liver_clock:set_time(undefined),
     Config.
 
 init_per_group(Group, Config) ->
@@ -94,7 +93,7 @@ string_form(_Config) ->
 clock(_Config) ->
     Schema = #{d => {iso_date, #{<<"min">> => <<"today">>, <<"max">> => <<"tomorrow">>}}},
     Ms = calendar:rfc3339_to_system_time("2026-10-18T23:30:00-02:00", [{unit, millisecond}]),
-    meck:expect(liver_clock, system_time, fun() -> Ms end),
+    ok = liver_clock:set_time(Ms),
     ?assertEqual({ok, #{d => {2026, 10, 19}}}, liver:validate(Schema, #{d => <<"2026-10-19">>}, ?LIVR)),
     ?assertEqual({error, #{d => <<"DATE_TOO_EARLY">>}},
                  liver:validate(Schema, #{d => <<"2026-10-18">>}, ?LIVR)),

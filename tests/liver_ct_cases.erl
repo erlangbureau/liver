@@ -58,7 +58,7 @@ run(Suite, Form, Kind, Case, Expectation, CaseData, DefaultOpts) ->
 %% internal
 
 %% options.json of the LIVR 2.5 cases: the current time for today,
-%% yesterday and tomorrow, see liver_clock (mocked by the suite).
+%% yesterday and tomorrow, see liver_clock.
 now(maps, CaseData) -> maps:get(now, CaseData, undefined);
 now(proplists, CaseData) -> ok_get_default(now, CaseData, undefined).
 
@@ -66,7 +66,7 @@ fix_clock(undefined) ->
     ok;
 fix_clock(Now) ->
     Ms = calendar:rfc3339_to_system_time(binary_to_list(Now), [{unit, millisecond}]),
-    meck:expect(liver_clock, system_time, fun() -> Ms end).
+    liver_clock:set_time(Ms).
 
 expectation(schema_errors) -> schema_error;
 expectation(aliases_positive) -> positive;
