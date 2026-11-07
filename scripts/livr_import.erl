@@ -11,10 +11,16 @@
 %% Suites: positive, negative, aliases_positive, aliases_negative. The aliases
 %% of an aliases_* case go to opts => #{aliased_rules => [...]}.
 %%
+%% The LIVR 2.5 suite (test_suite_2.5) also has schema_errors: schemas
+%% that liver:check_schema/2 must reject. Its options.json ({"now": ...},
+%% the current time) goes to now => <<"...">>.
+%%
 %% Run via: make livr-spec-import
 -module(livr_import).
 
--export([run/3]).
+-export([run/3, run/4]).
+
+-define(KINDS, ["positive", "negative", "aliases_positive", "aliases_negative"]).
 
 -define(LIVR_RULES, #{
     <<"required">> => true,
@@ -51,33 +57,73 @@
     <<"to_uc">> => true,
     <<"remove">> => true,
     <<"leave_only">> => true,
-    <<"default">> => true
+    <<"default">> => true,
+    %% LIVR 2.5
+    <<"boolean">> => true,
+    <<"not_one_of">> => true,
+    <<"max_decimals">> => true,
+    <<"digits">> => true,
+    <<"starts_with">> => true,
+    <<"ends_with">> => true,
+    <<"contains">> => true,
+    <<"iso_datetime">> => true,
+    <<"iso_time">> => true,
+    <<"required_if">> => true,
+    <<"when">> => true,
+    <<"values">> => true,
+    <<"keys">> => true,
+    <<"any">> => true,
+    <<"list_length">> => true,
+    <<"unique">> => true,
+    <<"split">> => true,
+    <<"uuid">> => true,
+    <<"ip">> => true,
+    <<"cidr">> => true,
+    <<"hostname">> => true,
+    <<"base64">> => true,
+    <<"hex">> => true,
+    <<"digest">> => true,
+    <<"mongo_id">> => true,
+    <<"hex_color">> => true,
+    <<"mac">> => true,
+    <<"e164">> => true,
+    <<"semver">> => true,
+    <<"jwt">> => true,
+    <<"luhn">> => true,
+    <<"credit_card">> => true,
+    <<"iban">> => true
 }).
 
 %% API
-run(Source, Sha, Out) when is_list(Source), is_list(Sha), is_list(Out) ->
-    ok = ensure_tree(Out),
-    {PosNames, PosEntries} = import_kind(Source, Out, Sha, "positive"),
-    {NegNames, NegEntries} = import_kind(Source, Out, Sha, "negative"),
-    {APosNames, APosEntries} = import_kind(Source, Out, Sha, "aliases_positive"),
-    {ANegNames, ANegEntries} = import_kind(Source, Out, Sha, "aliases_negative"),
-    Entries = PosEntries ++ NegEntries ++ APosEntries ++ ANegEntries,
-    ok = write_manifest(Out, Sha, Entries),
-    ok = write_cases_hrl(Out, PosNames, NegNames, APosNames, ANegNames),
-    ok = write_runners_hrl(Out, unique(PosNames ++ NegNames ++ APosNames ++ ANegNames)),
-    io:format("Imported ~p cases (maps+proplists) from LIVR@~s into ~s~n",
-              [length(Entries), string:slice(Sha, 0, 8), Out]),
+run(Source, Sha, Out) ->
+    run(Source, Sha, Out, "test_suite").
+
+%% SuiteDir: "test_suite" (LIVR 2.0) or "test_suite_2.5" (LIVR 2.5)
+run(Source, Sha, Out, SuiteDir)
+        when is_list(Source), is_list(Sha), is_list(Out), is_list(SuiteDir) ->
+    Kinds = case filelib:is_dir(filename:join([Source, SuiteDir, "schema_errors"])) of
+        true -> ?KINDS ++ ["schema_errors"];
+        false -> ?KINDS
+    end,
+    ok = ensure_tree(Out, Kinds),
+    Imported = [import_kind(Source, SuiteDir, Out, Sha, Kind) || Kind <- Kinds],
+    Entries = lists:append([E || {_Names, E} <- Imported]),
+    ok = write_manifest(Out, Sha, SuiteDir, Kinds, Entries),
+    ok = write_cases_hrl(Out, Kinds, [Names || {Names, _E} <- Imported]),
+    ok = write_runners_hrl(Out, unique(lists:append([Names || {Names, _E} <- Imported]))),
+    io:format("Imported ~p cases (maps+proplists) from LIVR@~s/~s into ~s~n",
+              [length(Entries), string:slice(Sha, 0, 8), SuiteDir, Out]),
     ok.
 
 %% internal
-ensure_tree(Out) ->
+ensure_tree(Out, Kinds) ->
     lists:foreach(fun(Dir) -> ok = ensure_dir(Dir) end,
         [Out, filename:join(Out, "maps"), filename:join(Out, "proplists")] ++
         [filename:join([Out, Form, Kind]) || Form <- ["maps", "proplists"],
-            Kind <- ["positive", "negative", "aliases_positive", "aliases_negative"]]).
+            Kind <- Kinds]).
 
-import_kind(Source, Out, Sha, Kind) ->
-    Root = filename:join([Source, "test_suite", Kind]),
+import_kind(Source, SuiteDir, Out, Sha, Kind) ->
+    Root = filename:join([Source, SuiteDir, Kind]),
     {ok, Entries0} = file:list_dir(Root),
     Dirs = lists:sort([E || E <- Entries0,
                             filelib:is_dir(filename:join(Root, E))]),
@@ -85,26 +131,45 @@ import_kind(Source, Out, Sha, Kind) ->
         Atom = case_atom(Dir),
         %% 1) Decode as proplist first to keep JSON key order.
         CasePL0 = build_case_proplist(Root, Dir, Kind, Atom),
-        {CasePL, Patched} = apply_known_patches(Atom, Kind, CasePL0),
+        {CasePL1, Patched1} = apply_known_patches(Atom, Kind, CasePL0),
+        {CasePL, Patched} = order_like_schema(SuiteDir, Kind, CasePL1, Patched1),
         PLFile = filename:join([Out, "proplists", Kind, Dir ++ ".config"]),
-        ok = write_case(PLFile, proplists, Kind, Dir, Atom, Sha, CasePL, Patched),
+        ok = write_case(PLFile, proplists, SuiteDir, Kind, Dir, Atom, Sha, CasePL, Patched),
         %% 2) Derive maps from the same proplist terms.
         CaseMap = proplist_case_to_map(CasePL),
         MapFile = filename:join([Out, "maps", Kind, Dir ++ ".config"]),
-        ok = write_case(MapFile, maps, Kind, Dir, Atom, Sha, CaseMap, Patched),
+        ok = write_case(MapFile, maps, SuiteDir, Kind, Dir, Atom, Sha, CaseMap, Patched),
         {[Atom | NamesAcc], [Kind ++ "/" ++ Dir | EntriesAcc]}
     end, {[], []}, Dirs).
 
 build_case_proplist(Root, Dir, Kind, Atom) ->
     CaseDir = filename:join(Root, Dir),
-    Rules = convert_schema_pl(decode_proplist(filename:join(CaseDir, "rules.json"))),
-    Input = decode_proplist(filename:join(CaseDir, "input.json")),
+    RulesJson = decode_proplist(filename:join(CaseDir, "rules.json")),
     case Kind of
         "aliases_" ++ Kind2 ->
-            Aliases = [convert_alias_pl(A) || A <- decode_proplist(
-                           filename:join(CaseDir, "aliases.json"))],
-            build_case_proplist(Root, Dir, Kind2, Atom)
-                ++ [{opts, [{aliased_rules, Aliases}]}];
+            build_case_proplist(Root, Dir, Kind2, Atom) ++ aliases_opts(CaseDir);
+        "schema_errors" ->
+            [{name, Atom}, {rules, convert_schema_pl(RulesJson)}] ++ aliases_opts(CaseDir);
+        _ ->
+            build_case_proplist(Root, Dir, Kind, Atom, CaseDir,
+                                convert_schema_pl(RulesJson))
+                ++ case filelib:is_regular(filename:join(CaseDir, "options.json")) of
+                       true -> [{now, ok_get(<<"now">>, decode_proplist(
+                                          filename:join(CaseDir, "options.json")))}];
+                       false -> []
+                   end
+    end.
+
+aliases_opts(CaseDir) ->
+    Path = filename:join(CaseDir, "aliases.json"),
+    case filelib:is_regular(Path) of
+        true -> [{opts, [{aliased_rules, [convert_alias_pl(A) || A <- decode_proplist(Path)]}]}];
+        false -> []
+    end.
+
+build_case_proplist(_Root, _Dir, Kind, Atom, CaseDir, Rules) ->
+    Input = decode_proplist(filename:join(CaseDir, "input.json")),
+    case Kind of
         "positive" ->
             Output0 = decode_proplist(filename:join(CaseDir, "output.json")),
             Output = case Atom of
@@ -126,6 +191,24 @@ apply_known_patches('or', "negative", Case) ->
      [or_negative_nested_error_key_order]};
 apply_known_patches(_Atom, _Kind, Case) ->
     {Case, []}.
+
+%% test_suite_2.5: liver returns the fields in schema order, so the
+%% output and errors of a proplist case follow the order of rules.json.
+order_like_schema("test_suite_2.5", Kind, Case, Patched) when Kind =/= "schema_errors" ->
+    Rules = ok_get(rules, Case),
+    Key = case lists:keymember(output, 1, Case) of
+        true -> output;
+        false -> errors
+    end,
+    Result = ok_get(Key, Case),
+    Ordered = [KV || {K, _} <- Rules, KV <- [lists:keyfind(K, 1, Result)], KV =/= false]
+        ++ [KV || {K, _} = KV <- Result, not lists:keymember(K, 1, Rules)],
+    case Ordered =:= Result orelse Result =:= [{}] of
+        true -> {Case, Patched};
+        false -> {set_key(Key, Case, Ordered), [top_level_key_order_like_schema | Patched]}
+    end;
+order_like_schema(_SuiteDir, _Kind, Case, Patched) ->
+    {Case, Patched}.
 
 %% negative/29-or: first products[] error object is
 %%   {"name": "REQUIRED", "product_type": "NOT_ALLOWED_VALUE"}
@@ -228,12 +311,25 @@ convert_rule_args_pl(list_of, Args) ->
     convert_rule_pl(Args);
 convert_rule_args_pl('or', Args) when is_list(Args) ->
     [convert_rule_pl(V) || V <- Args];
+%% LIVR 2.5: when takes a reference and rules, values and keys take rules
+convert_rule_args_pl('when', [Ref, Cases]) ->
+    case is_object_proplist(Cases) of
+        true -> [Ref, [{K, convert_rule_pl(V)} || {K, V} <- Cases, K =/= {}] ++ empty_pl(Cases)];
+        false -> [Ref, convert_data_pl(Cases)]
+    end;
+convert_rule_args_pl('when', [Ref | Rules]) when Rules =/= [] ->
+    [Ref | [convert_rule_pl(R) || R <- Rules]];
+convert_rule_args_pl(Rule, Args) when Rule =:= values; Rule =:= keys ->
+    convert_rule_pl(Args);
 convert_rule_args_pl(variable_object, [Discriminator, Variants]) ->
     [Discriminator, convert_variants_pl(Variants)];
 convert_rule_args_pl(list_of_different_objects, [Discriminator, Variants]) ->
     [Discriminator, convert_variants_pl(Variants)];
 convert_rule_args_pl(_Rule, Args) ->
     convert_data_pl(Args).
+
+empty_pl([{}]) -> [{}];
+empty_pl(_) -> [].
 
 convert_variants_pl([{}]) ->
     [{}];
@@ -316,7 +412,7 @@ case_atom(Dir) ->
             error({bad_case_dir, Dir})
     end.
 
-write_case(Path, Form, Kind, Dir, Atom, Sha, CaseTerm, Patches) ->
+write_case(Path, Form, SuiteDir, Kind, Dir, Atom, Sha, CaseTerm, Patches) ->
     PatchNote = case Patches of
         [] ->
             [];
@@ -328,11 +424,11 @@ write_case(Path, Form, Kind, Dir, Atom, Sha, CaseTerm, Patches) ->
     end,
     Header = io_lib:format(
         "%% LIVR ~s/~s (case: ~p, form: ~p)~n"
-        "%% Source: https://github.com/koorchik/LIVR/tree/~s/test_suite/~s/~s~n"
+        "%% Source: https://github.com/koorchik/LIVR/tree/~s/~s/~s/~s~n"
         "%% Imported for liver; iso_date outputs use Erlang {Y,M,D} dates.~n"
         "%% Proplist fixtures preserve JSON key order from json:decode/3.~n"
         "~s~n",
-        [Kind, Dir, Atom, Form, Sha, Kind, Dir, PatchNote]),
+        [Kind, Dir, Atom, Form, Sha, SuiteDir, Kind, Dir, PatchNote]),
     Body = [format_term(CaseTerm, 0), ".\n"],
     ok = file:write_file(Path, unicode:characters_to_binary([Header, Body])).
 
@@ -427,11 +523,12 @@ escape_erl_string(Chars) ->
          _ -> C
      end || C <- Chars].
 
-write_manifest(Out, Sha, Entries) ->
+write_manifest(Out, Sha, SuiteDir, Kinds, Entries) ->
     Lines = [
         "sha " ++ Sha, $\n,
         "url https://github.com/koorchik/LIVR", $\n,
-        "suites positive negative aliases_positive aliases_negative", $\n,
+        [["dir ", SuiteDir, $\n] || SuiteDir =/= "test_suite"],
+        "suites ", lists:join(" ", Kinds), $\n,
         "forms maps proplists", $\n, $\n,
         "# cases", $\n,
         [[E, $\n] || E <- lists:reverse(Entries)],
@@ -439,21 +536,13 @@ write_manifest(Out, Sha, Entries) ->
     ],
     ok = file:write_file(filename:join(Out, "MANIFEST"), Lines).
 
-write_cases_hrl(Out, PosNames, NegNames, APosNames, ANegNames) ->
+write_cases_hrl(Out, Kinds, NamesPerKind) ->
     Content = [
         "%% Generated by livr_import - do not edit by hand.\n",
-        "-define(LIVR_POSITIVE_CASES, [\n",
-        format_atom_list(lists:reverse(PosNames)),
-        "]).\n\n",
-        "-define(LIVR_NEGATIVE_CASES, [\n",
-        format_atom_list(lists:reverse(NegNames)),
-        "]).\n\n",
-        "-define(LIVR_ALIASES_POSITIVE_CASES, [\n",
-        format_atom_list(lists:reverse(APosNames)),
-        "]).\n\n",
-        "-define(LIVR_ALIASES_NEGATIVE_CASES, [\n",
-        format_atom_list(lists:reverse(ANegNames)),
-        "]).\n"
+        lists:join("\n", [["-define(LIVR_", string:uppercase(Kind), "_CASES, [\n",
+                           format_atom_list(lists:reverse(Names)),
+                           "]).\n"]
+                          || {Kind, Names} <- lists:zip(Kinds, NamesPerKind)])
     ],
     ok = file:write_file(filename:join(Out, "cases.hrl"), Content).
 

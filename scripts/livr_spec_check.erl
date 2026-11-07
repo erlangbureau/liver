@@ -8,8 +8,8 @@
 
 run(Source, ManifestPath) when is_list(Source), is_list(ManifestPath) ->
     CasesRoot = filename:dirname(ManifestPath),
-    {Sha, Local} = read_manifest(ManifestPath),
-    Remote = upstream_cases(Source),
+    {Sha, Local, Dir, Kinds} = read_manifest(ManifestPath),
+    Remote = upstream_cases(Source, Dir, Kinds),
     Missing = lists:sort(sets:to_list(sets:subtract(Remote, Local))),
     Extra = lists:sort(sets:to_list(sets:subtract(Local, Remote))),
     FormGaps = missing_form_files(CasesRoot, Local),
@@ -35,22 +35,25 @@ run(Source, ManifestPath) when is_list(Source), is_list(ManifestPath) ->
 read_manifest(Path) ->
     {ok, Bin} = file:read_file(Path),
     Lines = binary:split(Bin, <<"\n">>, [global]),
-    lists:foldl(fun(Line0, {Sha, Cases}) ->
+    lists:foldl(fun(Line0, {Sha, Cases, Dir, Kinds}) ->
         Line = string:trim(Line0),
         case Line of
-            <<>> -> {Sha, Cases};
-            <<"#", _/binary>> -> {Sha, Cases};
-            <<"sha ", Rest/binary>> -> {binary_to_list(Rest), Cases};
-            <<"url ", _/binary>> -> {Sha, Cases};
-            <<"suites ", _/binary>> -> {Sha, Cases};
-            <<"forms ", _/binary>> -> {Sha, Cases};
-            _ -> {Sha, sets:add_element(binary_to_list(Line), Cases)}
+            <<>> -> {Sha, Cases, Dir, Kinds};
+            <<"#", _/binary>> -> {Sha, Cases, Dir, Kinds};
+            <<"sha ", Rest/binary>> -> {binary_to_list(Rest), Cases, Dir, Kinds};
+            <<"url ", _/binary>> -> {Sha, Cases, Dir, Kinds};
+            %% the suite directory, test_suite unless given (test_suite_2.5)
+            <<"dir ", Rest/binary>> -> {Sha, Cases, binary_to_list(Rest), Kinds};
+            <<"suites ", Rest/binary>> ->
+                {Sha, Cases, Dir, string:lexemes(binary_to_list(Rest), " ")};
+            <<"forms ", _/binary>> -> {Sha, Cases, Dir, Kinds};
+            _ -> {Sha, sets:add_element(binary_to_list(Line), Cases), Dir, Kinds}
         end
-    end, {"(unknown)", sets:new()}, Lines).
+    end, {"(unknown)", sets:new(), "test_suite", []}, Lines).
 
-upstream_cases(Source) ->
+upstream_cases(Source, Dir, Kinds) ->
     lists:foldl(fun(Kind, Acc) ->
-        Root = filename:join([Source, "test_suite", Kind]),
+        Root = filename:join([Source, Dir, Kind]),
         case file:list_dir(Root) of
             {ok, Entries} ->
                 lists:foldl(fun(E, Acc2) ->
@@ -62,7 +65,7 @@ upstream_cases(Source) ->
             {error, Reason} ->
                 error({missing_suite_dir, Root, Reason})
         end
-    end, sets:new(), ["positive", "negative", "aliases_positive", "aliases_negative"]).
+    end, sets:new(), Kinds).
 
 missing_form_files(CasesRoot, Local) ->
     lists:sort(lists:foldl(fun(Case, Acc) ->

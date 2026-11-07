@@ -1,6 +1,7 @@
 # LIVR specification sync helpers.
 #
-# Local cases live in tests/cases/livr (Erlang terms).
+# Local cases live in tests/cases/livr (Erlang terms); the LIVR 2.5
+# suite (test_suite_2.5, with schema_errors) in tests/cases/livr25.
 # Upstream source: https://github.com/koorchik/LIVR
 #
 # Import/check tools are Erlang modules under scripts/.
@@ -9,6 +10,7 @@
 LIVR_SPEC_REF ?= master
 LIVR_SPEC_TMP ?= $(CURDIR)/.tmp/LIVR
 LIVR_SPEC_CASES ?= $(CURDIR)/tests/cases/livr
+LIVR_SPEC_CASES_2_5 ?= $(CURDIR)/tests/cases/livr25
 LIVR_SPEC_ZIP ?= $(CURDIR)/.tmp/livr.zip
 LIVR_SPEC_EBIN ?= $(CURDIR)/.tmp/livr_spec_ebin
 
@@ -33,8 +35,16 @@ livr-spec-import: livr-spec-fetch livr-spec-tools
 	$(verbose) SHA=$$(unzip -z $(LIVR_SPEC_ZIP) 2>/dev/null | sed -n '2p' | tr -d '\r'); \
 		if [ -z "$$SHA" ]; then echo "Could not detect LIVR SHA from zip comment" >&2; exit 1; fi; \
 		erl -noshell -pa $(LIVR_SPEC_EBIN) \
-			-eval "ok = livr_import:run(\"$(LIVR_SPEC_TMP)\", \"$$SHA\", \"$(LIVR_SPEC_CASES)\"), halt()."
+			-eval "ok = livr_import:run(\"$(LIVR_SPEC_TMP)\", \"$$SHA\", \"$(LIVR_SPEC_CASES)\"), halt()."; \
+		if [ -d $(LIVR_SPEC_TMP)/test_suite_2.5 ]; then \
+			erl -noshell -pa $(LIVR_SPEC_EBIN) \
+				-eval "ok = livr_import:run(\"$(LIVR_SPEC_TMP)\", \"$$SHA\", \"$(LIVR_SPEC_CASES_2_5)\", \"test_suite_2.5\"), halt()."; \
+		fi
 
 livr-spec-check: livr-spec-fetch livr-spec-tools
 	$(verbose) erl -noshell -pa $(LIVR_SPEC_EBIN) \
 		-eval "ok = livr_spec_check:run(\"$(LIVR_SPEC_TMP)\", \"$(LIVR_SPEC_CASES)/MANIFEST\"), halt()."
+	$(verbose) if [ -d $(LIVR_SPEC_TMP)/test_suite_2.5 ]; then \
+		erl -noshell -pa $(LIVR_SPEC_EBIN) \
+			-eval "ok = livr_spec_check:run(\"$(LIVR_SPEC_TMP)\", \"$(LIVR_SPEC_CASES_2_5)/MANIFEST\"), halt()."; \
+	fi
