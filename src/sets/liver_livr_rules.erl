@@ -500,7 +500,7 @@ url(_Args, Value, _Opts) when is_binary(Value) ->
         "(\\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$",
     case re:run(Host, Pattern, [caseless, {capture, none}]) of
         nomatch -> {error, wrong_url};
-        _       -> {ok, Value}
+        _       -> url_port(Value, Value2)
     end;
 url(_Args, _Value, _Opts) ->
     {error, format_error}.
@@ -520,12 +520,31 @@ url(_Args, Value, _Opts) when is_binary(Value) ->
         "(\\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$",
     case re:run(Host, Pattern, [caseless, {capture, none}]) of
         nomatch -> {error, wrong_url};
-        _       -> {ok, Value}
+        _       -> url_port(Value, Value2)
     end;
 url(_Args, _Value, _Opts) ->
     {error, format_error}.
 
 -endif.
+
+%% LIVR 2.5: a port has 1-5 ASCII digits and a value of 0-65535. The URI
+%% parser gives only its value, so the port is read from the authority:
+%% after "scheme://" and the user info, up to the path, the query or the
+%% fragment. The host has no ":" here, it passed the pattern of url/3.
+url_port(Value, Url) ->
+    {_Scheme, "://" ++ Rest} = lists:splitwith(fun(C) -> C =/= $: end, Url),
+    {Authority, _} = lists:splitwith(fun(C) -> not lists:member(C, "/?#") end, Rest),
+    HostPort = lists:last(string:split(Authority, "@", trailing)),
+    case lists:splitwith(fun(C) -> C =/= $: end, HostPort) of
+        {_Host, ""} ->
+            {ok, Value};
+        {_Host, ":" ++ Port} ->
+            Digits = re:run(Port, "^[0-9]{1,5}$", [dollar_endonly, {capture, none}]),
+            case Digits =:= match andalso list_to_integer(Port) =< 65535 of
+                true -> {ok, Value};
+                false -> {error, wrong_url}
+            end
+    end.
 
 %% LIVR 2.5: an options object with min and max bounds.
 iso_date(Args, Value, _Opts) ->

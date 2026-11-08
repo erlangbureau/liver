@@ -19,6 +19,7 @@ all() ->
         null_argument,
         eq_one_of_booleans,
         unique_key_value_format,
+        url_port,
         {group, maps_positive},
         {group, maps_negative},
         {group, proplists_positive},
@@ -230,5 +231,18 @@ unique_key_value_format(_Config) ->
                  [{<<"a">>, [1]}, {<<"b">>, <<>>}]]],
     ?assertEqual({ok, #{v => [#{<<"a">> => <<>>, <<"b">> => 1}]}},
                  liver:validate(Schema, #{v => [#{<<"a">> => <<>>, <<"b">> => 1}]}, ?LIVR)).
+
+%% url: a port has 1-5 ASCII digits and a value of 0-65535, also with user
+%% info, a path, a query or a fragment after it; uri_string of OTP 25 and 26
+%% accepts more digits
+url_port(_Config) ->
+    [?assertEqual({ok, #{u => Url}}, liver:validate(#{u => url}, #{u => Url}, ?LIVR))
+     || Url <- [<<"http://example.com:0">>, <<"http://example.com:00080/">>,
+                <<"https://user:pass@example.com:8?q=1">>, <<"http://u@example.com:65535#top">>,
+                <<"http://user:pass@example.com/">>]],
+    [?assertEqual({error, #{u => <<"WRONG_URL">>}}, liver:validate(#{u => url}, #{u => Url}, ?LIVR))
+     || Url <- [<<"http://example.com:">>, <<"http://example.com:/path">>,
+                <<"http://example.com:000080">>, <<"http://example.com:123456/">>,
+                <<"http://user:pass@example.com:65536/">>, <<"https://u@example.com:99999?q=1">>]].
 
 -include("cases/livr25/runners.hrl").

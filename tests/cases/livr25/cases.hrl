@@ -34,7 +34,8 @@
     luhn,
     credit_card,
     iban,
-    object_or_list
+    object_or_list,
+    url
 ]).
 
 -define(LIVR_NEGATIVE_CASES, [
@@ -72,7 +73,8 @@
     luhn,
     credit_card,
     iban,
-    object_or_list
+    object_or_list,
+    url
 ]).
 
 -define(LIVR_ALIASES_POSITIVE_CASES, [

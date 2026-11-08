@@ -80,7 +80,7 @@ These rules treat **JSON-style strings** as numbers when needed
 | Rule | Args | Notes |
 |------|------|--------|
 | `email` | — | Basic email check on a binary |
-| `url` | — | HTTP(S) URL check on a binary |
+| `url` | — | HTTP(S) URL check on a binary: host labels of 1–63 characters, no dot after the host, a port of 1–5 digits up to 65535 (LIVR 2.5) |
 | `iso_date` | — \| `#{<<"min">> => B, <<"max">> => B}` | `YYYY-MM-DD` binary → Erlang `{Y,M,D}` date; bounds (LIVR 2.5): a date, `<<"today">>`, `<<"yesterday">>`, `<<"tomorrow">>` (UTC) |
 | `equal_to_field` | FieldName | Must equal another field’s value, compared as strings (`<<"10">>` equals `10`). Inside `'or'` and aliases it reads the fields next to the validated one |
 

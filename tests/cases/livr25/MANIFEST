@@ -1,4 +1,4 @@
-sha 14e5a1b19011d3e9bf6ab5a6a0dd4444bea8b280
+sha 44955f198e7cbd2d6ec2fb1926c9fe8bd2e5628d
 url https://github.com/koorchik/LIVR
 dir test_suite_2.5
 suites positive negative aliases_positive aliases_negative schema_errors
@@ -231,6 +231,7 @@ negative/32-luhn
 negative/33-credit_card
 negative/34-iban
 negative/35-object_or_list
+negative/36-url
 positive/01-boolean
 positive/02-not_one_of
 positive/03-max_decimals
@@ -266,4 +267,5 @@ positive/32-luhn
 positive/33-credit_card
 positive/34-iban
 positive/35-object_or_list
+positive/36-url
 

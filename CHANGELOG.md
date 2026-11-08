@@ -66,6 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `list_of` it sees no fields (LIVR 2.5).
 - `livr_spec`: `list_of`, `list_of_objects` and `list_of_different_objects`
   return `FORMAT_ERROR` for an object given as a proplist.
+- `livr_spec`: `url` accepts a port of 1–5 digits with a value of 0–65535
+  only, so `https://example.com:65536` and `http://example.com:` return
+  `WRONG_URL` (LIVR 2.5). A dot after the host and host labels longer than
+  63 characters were already rejected.
 - `return => proplist` with `nested_list`, `list_of`, `'or'` or a list as the
   root schema: it returned `format_error` or crashed.
 
