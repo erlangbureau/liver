@@ -10,7 +10,41 @@ run(Case, Config) ->
     Suite = ?config(cases_suite, Config),
     DefaultOpts = ?config(validate_opts, Config),
     CaseData = load_case(Suite, Form, Kind, Case),
-    {Rules, Input, Expected, Opts} = unpack(Kind, Form, CaseData, DefaultOpts),
+    case expectation(Kind) of
+        schema_error -> run_schema_error(Suite, Form, Case, CaseData, DefaultOpts);
+        Expectation -> run(Suite, Form, Kind, Case, Expectation, CaseData, DefaultOpts)
+    end.
+
+%% schema_errors: liver:check_schema/2 rejects the schema.
+run_schema_error(Suite, Form, Case, CaseData, DefaultOpts) ->
+    {Rules, Opts} = case Form of
+        maps ->
+            {maps:get(rules, CaseData),
+             maps:merge(DefaultOpts, maps:get(opts, CaseData, #{}))};
+        proplists ->
+            {ok_get(rules, CaseData),
+             maps:merge(DefaultOpts, to_map(ok_get_default(opts, CaseData, [])))}
+    end,
+    case liver:check_schema(Rules, Opts) of
+        {error, _Reason} ->
+            ok;
+        ok ->
+            ct:pal("suite=~p form=~p case=~p~nliver:check_schema(~p, ~p).~nGot: ok~n",
+                   [Suite, Form, Case, Rules, Opts]),
+            ct:fail({schema_accepted, Suite, Case, Form})
+    end.
+
+run(Suite, Form, Kind, Case, Expectation, CaseData, DefaultOpts) ->
+    {Rules, Input, Expected, Opts} = unpack(Expectation, Form, CaseData, DefaultOpts),
+    case liver:check_schema(Rules, Opts) of
+        ok ->
+            ok;
+        SchemaError ->
+            ct:pal("suite=~p form=~p kind=~p case=~p~nliver:check_schema(~p, ~p).~nGot: ~p~n",
+                   [Suite, Form, Kind, Case, Rules, Opts, SchemaError]),
+            ct:fail({schema_rejected, Suite, Case, Kind, Form})
+    end,
+    ok = fix_clock(now(Form, CaseData)),
     case liver:validate(Rules, Input, Opts) of
         Expected ->
             ok;
@@ -22,6 +56,23 @@ run(Case, Config) ->
     end.
 
 %% internal
+
+%% options.json of the LIVR 2.5 cases: the current time for today,
+%% yesterday and tomorrow, see liver_clock.
+now(maps, CaseData) -> maps:get(now, CaseData, undefined);
+now(proplists, CaseData) -> ok_get_default(now, CaseData, undefined).
+
+fix_clock(undefined) ->
+    ok;
+fix_clock(Now) ->
+    Ms = calendar:rfc3339_to_system_time(binary_to_list(Now), [{unit, millisecond}]),
+    liver_clock:set_time(Ms).
+
+expectation(schema_errors) -> schema_error;
+expectation(aliases_positive) -> positive;
+expectation(aliases_negative) -> negative;
+expectation(Kind) -> Kind.
+
 unpack(positive, maps, #{rules := Rules, input := Input, output := Output} = Data, DefaultOpts) ->
     {Rules, Input, {ok, Output}, maps:merge(DefaultOpts, maps:get(opts, Data, #{}))};
 unpack(negative, maps, #{rules := Rules, input := Input, errors := Errors} = Data, DefaultOpts) ->

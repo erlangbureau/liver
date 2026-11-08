@@ -12,6 +12,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `liver_json_schema`: bidirectional conversion between Liver field schemas and
   JSON Schema (Draft 2020-12). Import supports `rule_set => erlang_standard`
   (default) or `livr_spec`. See [doc/json_schema.md](doc/json_schema.md).
+- LIVR aliased rules: `liver:add_aliased_rule/1` and the `aliased_rules`
+  option of `validate/3`. See [README](README.md#add_aliased_rule1).
+- The LIVR `aliases_positive` / `aliases_negative` suites run in
+  `livr_rules_SUITE`.
+- `livr_spec`: the rules added in
+  [LIVR 2.5](https://github.com/koorchik/LIVR/blob/master/drafts/v2.5.md):
+  `boolean`, `not_one_of`, `max_decimals`, `digits`, `starts_with`, `ends_with`, `contains`,
+  `iso_datetime`, `iso_time`, `required_if`, `'when'`, `values`, `keys`, `any`,
+  `list_length`, `unique`, `split`, `uuid`, `ip`, `cidr`, `hostname`, `base64`,
+  `hex`, `digest`, `mongo_id`, `hex_color`, `mac`, `e164`, `semver`, `jwt`,
+  `luhn`, `credit_card`, `iban`, and `min` / `max` options for `iso_date`.
+  See [doc/livr_rules.md](doc/livr_rules.md#livr-25-rules).
+- `liver:check_schema/1,2`: check a schema without data (unknown rules, wrong
+  arguments of the 2.5 rules). `validate/2,3` run the same check, once per
+  schema (the schemas that passed are cached), and raise `error(Reason)`,
+  e.g. `error({invalid_args, Rule, Args})`.
+- `liver_clock`: the current time of the relative date bounds (`today`,
+  `yesterday`, `tomorrow`, in UTC); `liver_clock:set_time/1` fixes it in tests.
+- The LIVR 2.5 suite (`test_suite_2.5`, with `schema_errors`) runs in
+  `livr25_rules_SUITE`; `make livr-spec-import` imports it when the LIVR
+  repository has it.
+
+### Changed
+
+- `validate/2,3` raise `error({unknown_rule, Rule})` for an unknown rule
+  anywhere in the schema, also when the field is missing (LIVR 2.5). The
+  field error `{unimplemented_rule, Rule}` (for a present field) and the
+  silent `{ok, ...}` (for a missing one) are gone.
+- CI: a rebar3 job runs `rebar3 ct` on OTP 25 and 29; `actions/checkout` v7.
+- `livr_spec`: `eq` and `one_of` compare booleans as strings, so `true`
+  equals `<<"true">>` (LIVR 2.5).
+- `livr_spec`: `iso_date` returns `WRONG_DATE` for a number or a boolean
+  (was `FORMAT_ERROR`), accepts only ASCII digits, and an argument that is
+  not an options object is a schema error (LIVR 2.5).
+
+### Fixed
+
+- `livr_spec`: `equal_to_field` compares the values as strings
+  (`<<"10">>` equals `10`), as in LIVR 2.0.
+- `livr_spec`: `email` rejects whitespace (newlines, tabs) and a quoted local
+  part with `@`, as the LIVR 2.0 pattern does.
+- `livr_spec`: `'or'` runs on a missing field, so branches with `required`
+  return `REQUIRED`.
+- `like`: `$` matches only at the end of the value, as in JavaScript, so
+  `^[0-9]{5}$` no longer accepts `"12345\n"`.
+- `livr_spec`: rules skip `null` like `<<>>`, as in LIVR (they returned
+  `FORMAT_ERROR`, `eq` and `one_of` `NOT_ALLOWED_VALUE`).
+- `livr_spec`: `decimal` and `positive_decimal` accept integers (`10`), as
+  in LIVR.
+- `livr_spec`: `equal_to_field` inside `'or'` and aliased rules compares with
+  the fields next to the validated one (it saw a made-up object), and inside
+  `list_of` it sees no fields (LIVR 2.5).
+- `livr_spec`: `list_of`, `list_of_objects` and `list_of_different_objects`
+  return `FORMAT_ERROR` for an object given as a proplist.
+- `livr_spec`: `url` accepts a port of 1–5 digits with a value of 0–65535
+  only, so `https://example.com:65536` and `http://example.com:` return
+  `WRONG_URL` (LIVR 2.5). A dot after the host and host labels longer than
+  63 characters were already rejected.
+- `return => proplist` with `nested_list`, `list_of`, `'or'` or a list as the
+  root schema: it returned `format_error` or crashed.
 
 ## [1.1.0] - 2026-10-07
 

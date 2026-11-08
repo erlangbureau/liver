@@ -21,6 +21,33 @@ jobs:
     if: ${{ !cancelled() }}
     uses: ninenines/ci.erlang.mk/.github/workflows/ci.yaml@master
 
+  rebar3:
+    name: rebar3 (OTP ${{ matrix.otp }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          ## Oldest and latest supported OTP, each with its newest rebar3.
+          - otp: '25'
+            rebar3: '3.24.0'
+          - otp: '29'
+            rebar3: '3.28.0'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v7
+
+    - name: Set up Erlang/OTP
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{ matrix.otp }}
+        rebar3-version: ${{ matrix.rebar3 }}
+        version-type: loose
+
+    - name: Run tests with rebar3
+      run: rebar3 ct --dir tests
+
   coverage:
     name: Coverage Report
     runs-on: ubuntu-latest
@@ -28,7 +55,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Erlang/OTP
       uses: erlef/setup-beam@v1

@@ -2,7 +2,7 @@
 
 %% API
 -export([normalize/2]).
--export([has_required/1]).
+-export([has_required/1, has_required/2]).
 -export([execute/2, execute/3]).
 
 -include("liver_rules.hrl").
@@ -12,18 +12,31 @@ normalize(Rules, Data) ->
     Result = normalize(Rules, Data, []),
     lists:reverse(Result).
 
-has_required([{R, _A}|Rules]) ->
-    case is_required(R) of
+has_required(Rules) ->
+    has_required(Rules, #{}).
+
+has_required([{R, _A}|Rules], Opts) ->
+    case is_required(R, Opts) of
         true -> true;
-        false -> has_required(Rules)
+        false -> has_required(Rules, Opts)
     end;
-has_required([]) ->
+has_required([], _Opts) ->
     false.
 
 execute(Rules, Opts) ->
-    Rules2 = [Rule || {R, _Args} = Rule <- Rules, is_required(R)],
+    Rules2 = [Rule || {R, _Args} = Rule <- Rules, is_required(R, Opts)],
     execute(Rules2, ?MISSED_FIELD_VALUE, Opts).
 
+execute([{Rule, _Args}|Rules], Value, #{?ALIASED_RULES_OPT := Aliases} = Opts)
+        when is_map_key(Rule, Aliases) ->
+    %% The alias rules validate the value as a field of their own;
+    %% the alias error, if set, replaces their errors.
+    {AliasRules, AliasError} = maps:get(Rule, Aliases),
+    case liver:validate_term(AliasRules, Value, Opts) of
+        {ok, Value2} -> execute(Rules, Value2, Opts);
+        {error, _} when AliasError =/= undefined -> {error, AliasError};
+        Error -> Error
+    end;
 execute([{Rule, Args}|Rules], Value, Opts) ->
     Module = liver:which(Rule, Opts),
     try Module:Rule(Args, Value, Opts) of
@@ -32,6 +45,9 @@ execute([{Rule, Args}|Rules], Value, Opts) ->
     catch
         error:undef ->
             {error, {unimplemented_rule, Rule}};
+        error:{invalid_args, _, _} = Reason:Stacktrace ->
+            %% a schema error, see liver:check_schema/2
+            erlang:raise(error, Reason, Stacktrace);
         _Type:_Reason ->
             {error, format_error}
     end;
@@ -82,7 +98,17 @@ normalize([K|Rules], Data, Acc) when is_binary(K) ->
 normalize([], _Data, Acc) ->
     Acc.
 
+is_required(Rule, #{?ALIASED_RULES_OPT := Aliases}) ->
+    %% an aliased rule may contain required, like 'or'
+    is_required(Rule) orelse maps:is_key(Rule, Aliases);
+is_required(Rule, _Opts) ->
+    is_required(Rule).
+
 is_required(required)       -> true;
 is_required(not_empty_list) -> true;
 is_required(default)        -> true;
+%% may contain required: runs on a missing field, see liver:validate_term/3
+is_required('or')           -> true;
+is_required(required_if)    -> true;
+is_required('when')         -> true;
 is_required(_)              -> false.

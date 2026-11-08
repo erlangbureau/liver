@@ -127,7 +127,7 @@ types(_Config) ->
     %% is_non_neg_integer
     err(#{n => is_non_neg_integer}, #{n => -1}, #{n => not_non_neg_integer}),
     %% is_integer_under_livr_spec
-    err(#{n => is_integer}, #{n => 10}, #{n => {unimplemented_rule,is_integer}}, #{rule_set => livr_spec}),
+    unknown(is_integer, #{n => is_integer}, #{n => 10}, #{rule_set => livr_spec}),
     %% is_integer_positive
     err(#{n => {is_integer,[positive]}}, #{n => -1}, #{n => not_integer}),
     %% is_pos_integer
@@ -508,6 +508,12 @@ rule_sets(_Config) ->
     ok(#{n => is_integer}, #{n => 10}, #{n => 10}, #{rule_set => {mixed,erlang_standard}}),
     %% return_proplist
     ok(#{a => is_integer}, #{a => 1}, [{a,1}], #{return => proplist}),
+    %% return_proplist_nested_list
+    ok(#{l => {nested_list,is_integer}}, #{l => [1]}, [{l,[1]}], #{return => proplist}),
+    err(#{l => {nested_list,is_integer}}, #{l => [a]}, [{l,[not_integer]}], #{return => proplist}),
+    %% return_proplist_or_missing
+    ok(#{a => #{'or' => [[{default,5}],[email]]}}, #{}, [{a,5}], #{rule_set => livr_spec, return => proplist}),
+    err(#{a => #{'or' => [[required],[required,email]]}}, #{}, [{a,<<"REQUIRED">>}], #{rule_set => livr_spec, return => proplist}),
     %% return_map
     ok(#{a => is_integer}, [{a,1}], #{a => 1}, #{return => map}),
     %% livr_compatible
@@ -527,7 +533,7 @@ rule_sets(_Config) ->
     %% binary_rule_list
     ok(#{<<"n">> => [<<"is_integer">>]}, #{<<"n">> => 1}, #{<<"n">> => 1}),
     %% livr_name_unavailable
-    err(#{n => integer}, #{n => <<"10">>}, #{n => {unimplemented_rule,integer}}),
+    unknown(integer, #{n => integer}, #{n => <<"10">>}, #{}),
     %% strict_unknown_field
     err(#{a => is_integer}, #{a => 1,x => 2}, #{x => unknown_field}, #{strict => true}),
     ok.
@@ -603,6 +609,12 @@ ok(Rules, Input, Output, Opts) ->
 
 err(Rules, Input, Errors) ->
     err(Rules, Input, Errors, #{}).
+
+%% An unknown rule is a schema error of validate/3
+unknown(Rule, Rules, Input, Opts) ->
+    ?assertError({unknown_rule, Rule}, liver:validate(Rules, Input, Opts)),
+    {PlRules, PlInput, _, PlOpts} = to_proplists(Rules, Input, #{}, Opts),
+    ?assertError({unknown_rule, Rule}, liver:validate(PlRules, PlInput, PlOpts)).
 
 err(Rules, Input, Errors, Opts) ->
     ?assertEqual({error, Errors}, liver:validate(Rules, Input, Opts)),
